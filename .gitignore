@@ -1,0 +1,5 @@
+# Niemals Nutzerdaten pushen!
+~/.therapiebot/
+*.json
+__pycache__/
+.env
