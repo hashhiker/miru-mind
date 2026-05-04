@@ -1,2 +1,4 @@
+groq
 ollama
 rich
+python-dotenv

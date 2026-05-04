@@ -1,35 +1,69 @@
 """
-TherapieBot – Lokaler Prototyp
-===============================
-Läuft komplett lokal via Ollama. Keine Daten verlassen dein Gerät.
+Miru Mind – Lokaler Therapie-Chatbot
+======================================
+Phase 1: Groq API (starkes Modell, schnelles Iterieren)
+Phase 2: Ollama lokal (Privacy-first, on-device)
 
 Setup:
-  1. Ollama installieren: https://ollama.com
-  2. Modell laden:        ollama pull llama3.2
-  3. Dependencies:        pip install ollama rich
-  4. Starten:             python therapiebot.py
+  1. pip install -r requirements.txt
+  2. .env Datei erstellen mit GROQ_API_KEY=dein_key
+     → Kostenloser Account: https://console.groq.com
+  3. python main.py
 """
 
 import json
 import datetime
 import os
 from pathlib import Path
+from dotenv import load_dotenv
+
+load_dotenv()
 
 try:
-    import ollama
     from rich.console import Console
     from rich.panel import Panel
     from rich.prompt import Prompt
     from rich.markdown import Markdown
 except ImportError:
-    print("Bitte zuerst installieren: pip install ollama rich")
+    print("Bitte zuerst installieren: pip install -r requirements.txt")
     exit(1)
 
 # ─── Konfiguration ────────────────────────────────────────────────────────────
 
-MODEL = "llama3.2"          # Alternativ: "phi3" oder "gemma3:1b"
-DATA_FILE = Path.home() / ".therapiebot" / "verlauf.json"
+# Wechsle hier zwischen den Modi:
+# "groq"  → Groq API (Phase 1, starkes Modell, braucht Internet)
+# "local" → Ollama lokal (Phase 2, Privacy-first, kein Internet)
+MODE = "groq"
+
+# Groq Einstellungen
+GROQ_MODEL = "llama-3.1-70b-versatile"
+
+# Ollama Einstellungen
+OLLAMA_MODEL = "llama3.2:1b"
+OLLAMA_HOST  = "http://localhost:11434"   # oder Mac-IP: "http://192.168.1.X:11434"
+
+DATA_FILE = Path.home() / ".miruMind" / "verlauf.json"
 console = Console()
+
+# ─── Client initialisieren ────────────────────────────────────────────────────
+
+if MODE == "groq":
+    try:
+        from groq import Groq
+        groq_client = Groq(api_key=os.getenv("GROQ_API_KEY"))
+    except ImportError:
+        print("Groq nicht installiert: pip install groq")
+        exit(1)
+    except Exception as e:
+        print(f"Groq Fehler: {e}")
+        exit(1)
+elif MODE == "local":
+    try:
+        import ollama
+        ollama_client = ollama.Client(host=OLLAMA_HOST)
+    except ImportError:
+        print("Ollama nicht installiert: pip install ollama")
+        exit(1)
 
 # ─── System-Prompt ────────────────────────────────────────────────────────────
 
@@ -59,23 +93,20 @@ Beginne das Gespräch warm und frage wie es dem Nutzer heute geht."""
 # ─── Datenspeicherung (lokal, JSON) ───────────────────────────────────────────
 
 def lade_verlauf() -> dict:
-    """Lädt den gespeicherten Verlauf vom lokalen Gerät."""
     if DATA_FILE.exists():
         with open(DATA_FILE, "r", encoding="utf-8") as f:
             return json.load(f)
     return {"sitzungen": [], "stimmungen": []}
 
 def speichere_verlauf(daten: dict):
-    """Speichert den Verlauf lokal."""
     DATA_FILE.parent.mkdir(exist_ok=True)
     with open(DATA_FILE, "w", encoding="utf-8") as f:
         json.dump(daten, f, ensure_ascii=False, indent=2)
 
 def stimmung_speichern(daten: dict, wert: int, notiz: str = ""):
-    """Speichert einen Stimmungseintrag."""
     eintrag = {
         "datum": datetime.datetime.now().isoformat(),
-        "wert": wert,        # 1–10
+        "wert": wert,
         "notiz": notiz
     }
     daten["stimmungen"].append(eintrag)
@@ -84,23 +115,39 @@ def stimmung_speichern(daten: dict, wert: int, notiz: str = ""):
 # ─── Chat-Logik ───────────────────────────────────────────────────────────────
 
 def chat_antwort(nachrichten: list[dict]) -> str:
-    """Sendet Nachrichten an das lokale Ollama-Modell und gibt die Antwort zurück."""
     try:
-        antwort = ollama.chat(
-            model=MODEL,
-            messages=nachrichten,
-            options={"temperature": 0.7, "num_predict": 300}
-        )
-        return antwort["message"]["content"]
+        if MODE == "groq":
+            antwort = groq_client.chat.completions.create(
+                model=GROQ_MODEL,
+                messages=nachrichten,
+                max_tokens=300,
+                temperature=0.7
+            )
+            return antwort.choices[0].message.content
+
+        elif MODE == "local":
+            antwort = ollama_client.chat(
+                model=OLLAMA_MODEL,
+                messages=nachrichten,
+                options={"temperature": 0.7, "num_predict": 300}
+            )
+            return antwort["message"]["content"]
+
     except Exception as e:
-        return f"[Fehler: Ollama nicht erreichbar – läuft es? Starte mit: ollama serve]\n{e}"
+        return f"[Fehler: {e}]"
 
 # ─── UI Hilfsfunktionen ───────────────────────────────────────────────────────
 
 def zeige_willkommen():
+    modus_label = (
+        f"[yellow]Groq API[/yellow] – Modell: {GROQ_MODEL}"
+        if MODE == "groq"
+        else f"[green]Lokal (Ollama)[/green] – Modell: {OLLAMA_MODEL}"
+    )
     console.print(Panel.fit(
-        "[bold cyan]🌿 TherapieBot[/bold cyan]\n"
-        "[dim]Läuft lokal – keine Daten verlassen dein Gerät[/dim]\n\n"
+        "[bold cyan]🌿 Miru Mind[/bold cyan]\n"
+        "[dim]Dein persönlicher Gesprächspartner für mentale Gesundheit[/dim]\n\n"
+        f"Modus: {modus_label}\n\n"
         "Befehle:\n"
         "  [yellow]/stimmung[/yellow]  – Stimmung eintragen (1–10)\n"
         "  [yellow]/verlauf[/yellow]   – Stimmungsverlauf anzeigen\n"
@@ -115,7 +162,7 @@ def zeige_stimmungsverlauf(daten: dict):
         console.print("[dim]Noch keine Stimmungseinträge.[/dim]")
         return
     console.print("\n[bold]📊 Stimmungsverlauf:[/bold]")
-    for e in eintraege[-10:]:  # Letzte 10 anzeigen
+    for e in eintraege[-10:]:
         datum = e["datum"][:10]
         balken = "█" * e["wert"] + "░" * (10 - e["wert"])
         notiz = f"  [dim]{e['notiz']}[/dim]" if e.get("notiz") else ""
@@ -129,14 +176,12 @@ def main():
     zeige_willkommen()
     daten = lade_verlauf()
 
-    # Sitzung vorbereiten
     nachrichten = [{"role": "system", "content": SYSTEM_PROMPT}]
 
-    # Begrüßung vom Bot
-    console.print("\n[dim]Bot denkt...[/dim]", end="\r")
+    console.print("\n[dim]Miru denkt...[/dim]", end="\r")
     begruessung = chat_antwort(nachrichten)
     nachrichten.append({"role": "assistant", "content": begruessung})
-    console.print(Panel(Markdown(begruessung), title="🌿 Bot", border_style="cyan"))
+    console.print(Panel(Markdown(begruessung), title="🌿 Miru", border_style="cyan"))
 
     sitzung_nachrichten = []
 
@@ -149,9 +194,7 @@ def main():
         if not eingabe:
             continue
 
-        # ── Befehle ──
         if eingabe == "/beenden":
-            # Sitzung speichern
             if sitzung_nachrichten:
                 daten["sitzungen"].append({
                     "datum": datetime.datetime.now().isoformat(),
@@ -182,17 +225,16 @@ def main():
                 console.print("[red]Bitte eine Zahl zwischen 1 und 10 eingeben.[/red]")
             continue
 
-        # ── Normale Nachricht ──
         nachrichten.append({"role": "user", "content": eingabe})
         sitzung_nachrichten.append({"role": "user", "content": eingabe})
 
-        console.print("[dim]Bot denkt...[/dim]", end="\r")
+        console.print("[dim]Miru denkt...[/dim]", end="\r")
         antwort = chat_antwort(nachrichten)
 
         nachrichten.append({"role": "assistant", "content": antwort})
         sitzung_nachrichten.append({"role": "assistant", "content": antwort})
 
-        console.print(Panel(Markdown(antwort), title="🌿 Bot", border_style="cyan"))
+        console.print(Panel(Markdown(antwort), title="🌿 Miru", border_style="cyan"))
 
 
 if __name__ == "__main__":
