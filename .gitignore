@@ -3,6 +3,8 @@
 .therapiebot/
 .miruMind/
 .env
+data/
+.miruMind/
  
 # Python
 __pycache__/

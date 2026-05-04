@@ -1,13 +1,13 @@
 """
-Miru Mind – Lokaler Therapie-Chatbot
-======================================
-Phase 1: Groq API (starkes Modell, schnelles Iterieren)
-Phase 2: Ollama lokal (Privacy-first, on-device)
+Miru Mind – Local Mental Health Chatbot
+========================================
+Phase 1: Groq API (powerful model, fast iteration)
+Phase 2: Ollama local (privacy-first, on-device)
 
 Setup:
   1. pip install -r requirements.txt
-  2. .env Datei erstellen mit GROQ_API_KEY=dein_key
-     → Kostenloser Account: https://console.groq.com
+  2. Create a .env file with GROQ_API_KEY=your_key
+     → Free account: https://console.groq.com
   3. python main.py
 """
 
@@ -25,53 +25,53 @@ try:
     from rich.prompt import Prompt
     from rich.markdown import Markdown
 except ImportError:
-    print("Bitte zuerst installieren: pip install -r requirements.txt")
+    print("Please install dependencies first: pip install -r requirements.txt")
     exit(1)
 
-# ─── Konfiguration ────────────────────────────────────────────────────────────
+# ─── Configuration ────────────────────────────────────────────────────────────
 
-# Wechsle hier zwischen den Modi:
-# "groq"  → Groq API (Phase 1, starkes Modell, braucht Internet)
-# "local" → Ollama lokal (Phase 2, Privacy-first, kein Internet)
+# Switch between modes here:
+# "groq"  → Groq API (Phase 1, powerful model, requires internet)
+# "local" → Ollama local (Phase 2, privacy-first, no internet)
 MODE = "groq"
 
-# Groq Einstellungen
+# Groq settings
 GROQ_MODEL = "llama-3.3-70b-versatile"
 
-# Ollama Einstellungen
+# Ollama settings
 OLLAMA_MODEL = "llama3.2:1b"
-OLLAMA_HOST  = "http://localhost:11434"   # oder Mac-IP: "http://192.168.1.X:11434"
+OLLAMA_HOST  = "http://localhost:11434"   # or Mac IP: "http://192.168.1.X:11434"
 
-# Gedächtnis Einstellungen
-LETZTE_SITZUNGEN = 3   # Wie viele vergangene Sitzungen Miru kennt
-STIMMUNG_TAGE    = 7   # Stimmungstrend der letzten N Tage
+# Memory settings
+RECENT_SESSIONS_COUNT = 3   # How many past sessions Miru remembers
+MOOD_TREND_DAYS       = 7   # Mood trend over the last N days
 
-DATA_FILE = Path.home() / ".miruMind" / "verlauf.json"
+DATA_FILE = Path(__file__).parent / "data" / "history.json"
 console = Console()
 
-# ─── Client initialisieren ────────────────────────────────────────────────────
+# ─── Client initialisation ────────────────────────────────────────────────────
 
 if MODE == "groq":
     try:
         from groq import Groq
         groq_client = Groq(api_key=os.getenv("GROQ_API_KEY"))
     except ImportError:
-        print("Groq nicht installiert: pip install groq")
+        print("Groq not installed: pip install groq")
         exit(1)
     except Exception as e:
-        print(f"Groq Fehler: {e}")
+        print(f"Groq error: {e}")
         exit(1)
 elif MODE == "local":
     try:
         import ollama
         ollama_client = ollama.Client(host=OLLAMA_HOST)
     except ImportError:
-        print("Ollama nicht installiert: pip install ollama")
+        print("Ollama not installed: pip install ollama")
         exit(1)
 
-# ─── System-Prompt ────────────────────────────────────────────────────────────
+# ─── System prompt ────────────────────────────────────────────────────────────
 
-SYSTEM_PROMPT_BASIS = """Du bist Miru – ein ruhiger, warmherziger Begleiter für mentale Gesundheit.
+SYSTEM_PROMPT_BASE = """Du bist Miru – ein ruhiger, warmherziger Begleiter für mentale Gesundheit.
 
 # DEINE PERSÖNLICHKEIT
 Du sprichst wie ein guter Freund mit therapeutischer Ausbildung: geerdet, geduldig,
@@ -115,142 +115,140 @@ Anlaufstelle – aber ich kann dir helfen, den ersten Schritt zu einem Fachmann 
 
 Sprache: Immer Deutsch. Nie Englisch, auch wenn der Nutzer Englisch schreibt."""
 
-# ─── Gedächtnis ───────────────────────────────────────────────────────────────
+# ─── Memory ───────────────────────────────────────────────────────────────────
 
-def baue_gedaechtnis_kontext(daten: dict) -> str:
+def build_memory_context(data: dict) -> str:
     """
-    Erstellt einen Kontext-Block aus vergangenen Sitzungen und Stimmungsdaten
-    der dann in den System-Prompt eingefügt wird.
+    Builds a context block from past sessions and mood data
+    that is then injected into the system prompt.
     """
-    teile = []
+    parts = []
 
-    # ── Stimmungstrend der letzten N Tage ──
-    stimmungen = daten.get("stimmungen", [])
-    if stimmungen:
-        grenze = datetime.datetime.now() - datetime.timedelta(days=STIMMUNG_TAGE)
+    # ── Mood trend over the last N days ──
+    mood_entries = data.get("moods", [])
+    if mood_entries:
+        cutoff = datetime.datetime.now() - datetime.timedelta(days=MOOD_TREND_DAYS)
         recent = [
-            s for s in stimmungen
-            if datetime.datetime.fromisoformat(s["datum"]) > grenze
+            entry for entry in mood_entries
+            if datetime.datetime.fromisoformat(entry["date"]) > cutoff
         ]
         if recent:
-            werte = [s["wert"] for s in recent]
-            durchschnitt = sum(werte) / len(werte)
-            trend = "steigend" if werte[-1] > werte[0] else "fallend" if werte[-1] < werte[0] else "stabil"
-            letzte_notizen = [s["notiz"] for s in recent[-3:] if s.get("notiz")]
+            values = [entry["value"] for entry in recent]
+            average = sum(values) / len(values)
+            trend = "steigend" if values[-1] > values[0] else "fallend" if values[-1] < values[0] else "stabil"
+            latest_notes = [entry["note"] for entry in recent[-3:] if entry.get("note")]
 
-            stimmung_text = (
-                f"STIMMUNGSTREND (letzte {STIMMUNG_TAGE} Tage):\n"
-                f"- Durchschnitt: {durchschnitt:.1f}/10 (Trend: {trend})\n"
-                f"- Letzte Einträge: {', '.join([str(w) for w in werte[-5:]])}/10"
+            mood_text = (
+                f"STIMMUNGSTREND (letzte {MOOD_TREND_DAYS} Tage):\n"
+                f"- Durchschnitt: {average:.1f}/10 (Trend: {trend})\n"
+                f"- Letzte Einträge: {', '.join([str(v) for v in values[-5:]])}/10"
             )
-            if letzte_notizen:
-                stimmung_text += f"\n- Notizen: {'; '.join(letzte_notizen)}"
-            teile.append(stimmung_text)
+            if latest_notes:
+                mood_text += f"\n- Notizen: {'; '.join(latest_notes)}"
+            parts.append(mood_text)
 
-    # ── Letzte N Sitzungen zusammenfassen ──
-    sitzungen = daten.get("sitzungen", [])
-    if sitzungen:
-        letzte = sitzungen[-LETZTE_SITZUNGEN:]
-        sitzungs_texte = []
+    # ── Summarise last N sessions ──
+    sessions = data.get("sessions", [])
+    if sessions:
+        recent_sessions = sessions[-RECENT_SESSIONS_COUNT:]
+        session_summaries = []
 
-        for s in letzte:
-            datum = s["datum"][:10]
-            nachrichten = s.get("nachrichten", [])
-            # Nur User-Nachrichten extrahieren für kompakten Überblick
-            user_msgs = [
-                m["content"] for m in nachrichten
-                if m["role"] == "user"
+        for session in recent_sessions:
+            date = session["date"][:10]
+            messages = session.get("messages", [])
+            user_messages = [
+                msg["content"] for msg in messages
+                if msg["role"] == "user"
             ]
-            if user_msgs:
-                # Erste und letzte Nachricht als Zusammenfassung
-                vorschau = user_msgs[0][:120]
-                sitzungs_texte.append(f"- {datum}: \"{vorschau}...\"")
+            if user_messages:
+                preview = user_messages[0][:120]
+                session_summaries.append(f"- {date}: \"{preview}...\"")
 
-        if sitzungs_texte:
-            teile.append(
-                f"VERGANGENE GESPRÄCHE (letzte {len(letzte)} Sitzungen):\n"
-                + "\n".join(sitzungs_texte)
+        if session_summaries:
+            parts.append(
+                f"VERGANGENE GESPRÄCHE (letzte {len(recent_sessions)} Sitzungen):\n"
+                + "\n".join(session_summaries)
             )
 
-    if not teile:
+    if not parts:
         return ""
 
     return (
         "\n\nGEDÄCHTNIS – Was du über den Nutzer weißt:\n"
-        + "\n\n".join(teile)
+        + "\n\n".join(parts)
         + "\n\nNutze dieses Wissen um Kontinuität zu zeigen. "
         "Beziehe dich natürlich darauf, ohne es aufzulisten. "
         "Beginne das Gespräch warm und frage wie es dem Nutzer heute geht."
     )
 
-def baue_system_prompt(daten: dict) -> str:
-    """Kombiniert Basis-Prompt mit Gedächtnis-Kontext."""
-    kontext = baue_gedaechtnis_kontext(daten)
-    if kontext:
-        return SYSTEM_PROMPT_BASIS + kontext
+def build_system_prompt(data: dict) -> str:
+    """Combines the base prompt with the memory context."""
+    context = build_memory_context(data)
+    if context:
+        return SYSTEM_PROMPT_BASE + context
     else:
-        return SYSTEM_PROMPT_BASIS + "\n\nBeginne das Gespräch warm und frage wie es dem Nutzer heute geht."
+        return SYSTEM_PROMPT_BASE + "\n\nBeginne das Gespräch warm und frage wie es dem Nutzer heute geht."
 
-# ─── Datenspeicherung (lokal, JSON) ───────────────────────────────────────────
+# ─── Data persistence (local, JSON) ───────────────────────────────────────────
 
-def lade_verlauf() -> dict:
+def load_history() -> dict:
     if DATA_FILE.exists():
         with open(DATA_FILE, "r", encoding="utf-8") as f:
             return json.load(f)
-    return {"sitzungen": [], "stimmungen": []}
+    return {"sessions": [], "moods": []}
 
-def speichere_verlauf(daten: dict):
+def save_history(data: dict):
     DATA_FILE.parent.mkdir(exist_ok=True)
     with open(DATA_FILE, "w", encoding="utf-8") as f:
-        json.dump(daten, f, ensure_ascii=False, indent=2)
+        json.dump(data, f, ensure_ascii=False, indent=2)
 
-def stimmung_speichern(daten: dict, wert: int, notiz: str = ""):
-    eintrag = {
-        "datum": datetime.datetime.now().isoformat(),
-        "wert": wert,
-        "notiz": notiz
+def save_mood(data: dict, value: int, note: str = ""):
+    entry = {
+        "date": datetime.datetime.now().isoformat(),
+        "value": value,
+        "note": note
     }
-    daten["stimmungen"].append(eintrag)
-    speichere_verlauf(daten)
+    data["moods"].append(entry)
+    save_history(data)
 
-# ─── Chat-Logik ───────────────────────────────────────────────────────────────
+# ─── Chat logic ───────────────────────────────────────────────────────────────
 
-def chat_antwort(nachrichten: list[dict]) -> str:
+def get_chat_response(messages: list[dict]) -> str:
     try:
         if MODE == "groq":
-            antwort = groq_client.chat.completions.create(
+            response = groq_client.chat.completions.create(
                 model=GROQ_MODEL,
-                messages=nachrichten,
+                messages=messages,
                 max_tokens=300,
                 temperature=0.7
             )
-            return antwort.choices[0].message.content
+            return response.choices[0].message.content
 
         elif MODE == "local":
-            antwort = ollama_client.chat(
+            response = ollama_client.chat(
                 model=OLLAMA_MODEL,
-                messages=nachrichten,
+                messages=messages,
                 options={"temperature": 0.7, "num_predict": 300}
             )
-            return antwort["message"]["content"]
+            return response["message"]["content"]
 
     except Exception as e:
         return f"[Fehler: {e}]"
 
-# ─── UI Hilfsfunktionen ───────────────────────────────────────────────────────
+# ─── UI helpers ───────────────────────────────────────────────────────────────
 
-def zeige_willkommen(hat_gedaechtnis: bool):
-    modus_label = (
+def show_welcome(has_memory: bool):
+    mode_label = (
         f"[yellow]Groq API[/yellow] – Modell: {GROQ_MODEL}"
         if MODE == "groq"
         else f"[green]Lokal (Ollama)[/green] – Modell: {OLLAMA_MODEL}"
     )
-    gedaechtnis_label = "[green]✓ Gedächtnis aktiv[/green]" if hat_gedaechtnis else "[dim]Erste Sitzung[/dim]"
+    memory_label = "[green]✓ Gedächtnis aktiv[/green]" if has_memory else "[dim]Erste Sitzung[/dim]"
     console.print(Panel.fit(
         "[bold cyan]🌿 Miru Mind[/bold cyan]\n"
         "[dim]Dein persönlicher Gesprächspartner für mentale Gesundheit[/dim]\n\n"
-        f"Modus: {modus_label}\n"
-        f"Gedächtnis: {gedaechtnis_label}\n\n"
+        f"Modus: {mode_label}\n"
+        f"Gedächtnis: {memory_label}\n\n"
         "Befehle:\n"
         "  [yellow]/stimmung[/yellow]  – Stimmung eintragen (1–10)\n"
         "  [yellow]/verlauf[/yellow]   – Stimmungsverlauf anzeigen\n"
@@ -259,93 +257,91 @@ def zeige_willkommen(hat_gedaechtnis: bool):
         border_style="cyan"
     ))
 
-def zeige_stimmungsverlauf(daten: dict):
-    eintraege = daten.get("stimmungen", [])
-    if not eintraege:
+def show_mood_history(data: dict):
+    entries = data.get("moods", [])
+    if not entries:
         console.print("[dim]Noch keine Stimmungseinträge.[/dim]")
         return
     console.print("\n[bold]📊 Stimmungsverlauf:[/bold]")
-    for e in eintraege[-10:]:
-        datum = e["datum"][:10]
-        balken = "█" * e["wert"] + "░" * (10 - e["wert"])
-        notiz = f"  [dim]{e['notiz']}[/dim]" if e.get("notiz") else ""
-        farbe = "green" if e["wert"] >= 7 else "yellow" if e["wert"] >= 4 else "red"
-        console.print(f"  {datum}  [{farbe}]{balken}[/{farbe}] {e['wert']}/10{notiz}")
+    for entry in entries[-10:]:
+        date = entry["date"][:10]
+        bar = "█" * entry["value"] + "░" * (10 - entry["value"])
+        note = f"  [dim]{entry['note']}[/dim]" if entry.get("note") else ""
+        color = "green" if entry["value"] >= 7 else "yellow" if entry["value"] >= 4 else "red"
+        console.print(f"  {date}  [{color}]{bar}[/{color}] {entry['value']}/10{note}")
     console.print()
 
-# ─── Hauptprogramm ────────────────────────────────────────────────────────────
+# ─── Main ─────────────────────────────────────────────────────────────────────
 
 def main():
-    daten = lade_verlauf()
+    data = load_history()
 
-    # Gedächtnis aufbauen
-    hat_gedaechtnis = bool(daten.get("sitzungen") or daten.get("stimmungen"))
-    system_prompt = baue_system_prompt(daten)
+    has_memory = bool(data.get("sessions") or data.get("moods"))
+    system_prompt = build_system_prompt(data)
 
-    zeige_willkommen(hat_gedaechtnis)
+    show_welcome(has_memory)
 
-    nachrichten = [{"role": "system", "content": system_prompt}]
+    messages = [{"role": "system", "content": system_prompt}]
 
     console.print("\n[dim]Miru denkt...[/dim]", end="\r")
-    begruessung = chat_antwort(nachrichten)
-    nachrichten.append({"role": "assistant", "content": begruessung})
-    console.print(Panel(Markdown(begruessung), title="🌿 Miru", border_style="cyan"))
+    greeting = get_chat_response(messages)
+    messages.append({"role": "assistant", "content": greeting})
+    console.print(Panel(Markdown(greeting), title="🌿 Miru", border_style="cyan"))
 
-    sitzung_nachrichten = []
+    session_messages = []
 
     while True:
         try:
-            eingabe = Prompt.ask("\n[bold green]Du[/bold green]").strip()
+            user_input = Prompt.ask("\n[bold green]Du[/bold green]").strip()
         except (KeyboardInterrupt, EOFError):
-            eingabe = "/beenden"
+            user_input = "/beenden"
 
-        if not eingabe:
+        if not user_input:
             continue
 
-        if eingabe == "/beenden":
-            if sitzung_nachrichten:
-                daten["sitzungen"].append({
-                    "datum": datetime.datetime.now().isoformat(),
-                    "nachrichten": sitzung_nachrichten
+        if user_input == "/beenden":
+            if session_messages:
+                data["sessions"].append({
+                    "date": datetime.datetime.now().isoformat(),
+                    "messages": session_messages
                 })
-                speichere_verlauf(daten)
+                save_history(data)
             console.print("\n[cyan]Sitzung gespeichert. Auf Wiedersehen! 🌿[/cyan]")
             break
 
-        elif eingabe == "/neu":
-            # Gedächtnis beim Neustart aktualisieren
-            daten = lade_verlauf()
-            system_prompt = baue_system_prompt(daten)
-            nachrichten = [{"role": "system", "content": system_prompt}]
-            sitzung_nachrichten = []
+        elif user_input == "/neu":
+            data = load_history()
+            system_prompt = build_system_prompt(data)
+            messages = [{"role": "system", "content": system_prompt}]
+            session_messages = []
             console.print("[dim]Neue Sitzung gestartet.[/dim]")
             continue
 
-        elif eingabe == "/verlauf":
-            zeige_stimmungsverlauf(daten)
+        elif user_input == "/verlauf":
+            show_mood_history(data)
             continue
 
-        elif eingabe == "/stimmung":
+        elif user_input == "/stimmung":
             try:
-                wert = int(Prompt.ask("Wie fühlst du dich? [bold](1–10)[/bold]"))
-                wert = max(1, min(10, wert))
-                notiz = Prompt.ask("Kurze Notiz (optional)", default="")
-                stimmung_speichern(daten, wert, notiz)
-                console.print(f"[green]✓ Stimmung ({wert}/10) gespeichert.[/green]")
+                value = int(Prompt.ask("Wie fühlst du dich? [bold](1–10)[/bold]"))
+                value = max(1, min(10, value))
+                note = Prompt.ask("Kurze Notiz (optional)", default="")
+                save_mood(data, value, note)
+                console.print(f"[green]✓ Stimmung ({value}/10) gespeichert.[/green]")
             except ValueError:
                 console.print("[red]Bitte eine Zahl zwischen 1 und 10 eingeben.[/red]")
             continue
 
-        nachrichten.append({"role": "user", "content": eingabe})
-        sitzung_nachrichten.append({"role": "user", "content": eingabe})
+        messages.append({"role": "user", "content": user_input})
+        session_messages.append({"role": "user", "content": user_input})
 
         console.print("[dim]Miru denkt...[/dim]", end="\r")
-        antwort = chat_antwort(nachrichten)
+        response = get_chat_response(messages)
 
-        nachrichten.append({"role": "assistant", "content": antwort})
-        sitzung_nachrichten.append({"role": "assistant", "content": antwort})
+        messages.append({"role": "assistant", "content": response})
+        session_messages.append({"role": "assistant", "content": response})
 
-        console.print(Panel(Markdown(antwort), title="🌿 Miru", border_style="cyan"))
+        console.print(Panel(Markdown(response), title="🌿 Miru", border_style="cyan"))
 
 
 if __name__ == "__main__":
