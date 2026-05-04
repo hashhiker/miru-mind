@@ -36,7 +36,7 @@ except ImportError:
 MODE = "groq"
 
 # Groq Einstellungen
-GROQ_MODEL = "llama-3.1-70b-versatile"
+GROQ_MODEL = "llama-3.3-70b-versatile"
 
 # Ollama Einstellungen
 OLLAMA_MODEL = "llama3.2:1b"
