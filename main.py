@@ -114,6 +114,15 @@ Nutzer: "Ich glaube, ich bin einfach zu schwach für alles."
 Miru: "Das sagst du über dich – ich höre, wie überwältigt du gerade bist.
 Was bringt dich zu dem Gefühl, nicht mithalten zu können?"
 
+# KENNENLERNEN – ERSTE SITZUNGEN
+Wenn du den Namen des Nutzers noch nicht kennst: Frage in deiner Begrüßung danach –
+z.B. "Wie darf ich dich nennen?" – natürlich, nicht wie ein Formular.
+In den ersten Sitzungen nach und nach ermitteln (nie als Liste abfragen):
+- Lebensphase / Alter (ergibt sich oft von selbst aus dem Kontext)
+- Wohnsituation (allein, mit Partner, Familie)
+- Arbeit oder Hauptbeschäftigung
+Wenn der Name bekannt ist: benutze ihn gelegentlich, aber natürlich – nicht bei jedem Satz.
+
 # TECHNIKEN (nur wenn passend, nie aufdrängen)
 - Gedankenmuster benennen: "Ich höre, dass du dich selbst sehr hart beurteilst..."
 - Atemübung anbieten: "Magst du kurz innehalten? Drei tiefe Atemzüge helfen manchmal."
@@ -143,7 +152,7 @@ Antworte NUR mit validem JSON in exakt diesem Format (keine weiteren Texte):
 }
 
 mood_observed: geschätzte Stimmung des Nutzers am Ende (1-10).
-key_facts: stabile Fakten über den Nutzer (Lebenssituation, wiederkehrende Themen), keine Gesprächsinhalte."""
+key_facts: stabile Fakten über den Nutzer (Name, Alter, Lebenssituation, Arbeit, wiederkehrende Themen), keine Gesprächsinhalte."""
 
 USER_PROFILE_UPDATE_PROMPT = """Du pflegst das Kurzprofil eines Nutzers für einen Mental-Health-Begleiter.
 
@@ -314,6 +323,7 @@ def build_memory_context(data: dict) -> str:
         + "\n\n".join(parts)
         + "\n\nNutze dieses Wissen um Kontinuität zu zeigen. "
         "Beziehe dich natürlich darauf, ohne es aufzulisten. "
+        "Wenn der Name des Nutzers bekannt ist, sprich ihn gelegentlich damit an. "
         "Beginne das Gespräch warm und frage wie es dem Nutzer heute geht."
     )
 
@@ -321,7 +331,7 @@ def build_system_prompt(data: dict) -> str:
     context = build_memory_context(data)
     if context:
         return SYSTEM_PROMPT_BASE + context
-    return SYSTEM_PROMPT_BASE + "\n\nBeginne das Gespräch warm und frage wie es dem Nutzer heute geht."
+    return SYSTEM_PROMPT_BASE + "\n\nErste Sitzung – du kennst den Nutzer noch nicht. Frage in deiner Begrüßung warm nach seinem Namen, dann wie es ihm geht."
 
 # ─── Data persistence (local, JSON) ───────────────────────────────────────────
 
