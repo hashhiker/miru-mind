@@ -1,0 +1,45 @@
+{
+  "name": "first_time_user",
+  "description": "Erste Sitzung ohne Vorgeschichte. Nutzer teilt wichtige Lebensfakten. Testet ob Zusammenfassung und Profil die richtigen Fakten extrahieren.",
+  "history": {
+    "sessions": [],
+    "moods": [],
+    "user_profile": ""
+  },
+  "session_messages": [
+    {
+      "role": "user",
+      "content": "Hallo, ich bin gerade auf Weltreise – seit drei Monaten schon in Südostasien. Eigentlich ein Traum, aber ich merke, dass ich mich innerlich oft leer fühle."
+    },
+    {
+      "role": "assistant",
+      "content": "Das klingt wie ein seltsames Gefühl – mitten in etwas so Schönem und trotzdem diese Leere. Das passiert manchmal, wenn man viel unterwegs ist. Seit wann merkst du das bei dir?"
+    },
+    {
+      "role": "user",
+      "content": "Ich glaube schon seit einigen Wochen. Ich mache viele Fotos, schreibe auch manchmal, aber abends fühlt sich alles irgendwie bedeutungslos an. Ich bin Lehrer und hab für die Reise eine Auszeit genommen."
+    },
+    {
+      "role": "assistant",
+      "content": "Dass du dir diese Auszeit genommen hast, klingt mutig. Und gleichzeitig hört sich an, als ob die erhoffte Erholung nicht ganz ankommt. Was fehlt dir abends am meisten?"
+    },
+    {
+      "role": "user",
+      "content": "Vielleicht Struktur. Oder echte Verbindungen. Ich vermisse tiefe Gespräche."
+    },
+    {
+      "role": "assistant",
+      "content": "Tiefe Gespräche – das ist etwas sehr Wesentliches. Hast du das Gefühl, dass du auf der Reise noch niemandem wirklich begegnet bist, der dich versteht?"
+    }
+  ],
+  "test_message": "Ich fühle mich heute wieder etwas verloren. Keine Ahnung was ich mit mir anfangen soll.",
+  "memory_checks": {
+    "summary_must_contain_any": ["Weltreise", "leer", "bedeutungslos", "Leere"],
+    "profile_must_contain_any": ["Weltreise", "Lehrer", "Reise"]
+  },
+  "chat_rubric": [
+    "Stellt die Antwort genau eine Frage (nicht zwei oder mehr)?",
+    "Beginnt die Antwort mit einer anerkennenden oder empathischen Aussage, bevor eine Frage kommt?",
+    "Ist die Antwort kürzer als 6 Sätze?"
+  ]
+}

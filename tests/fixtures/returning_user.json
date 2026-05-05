@@ -1,0 +1,38 @@
+{
+  "name": "returning_user_memory",
+  "description": "Bekannter Nutzer mit Profil und Sitzungshistorie. Testet ob Miru das Gedächtnis natürlich und passend einsetzt, ohne es aufzulisten.",
+  "history": {
+    "sessions": [
+      {
+        "date": "2026-04-28T20:00:00",
+        "summary": "Nutzer sprach über innere Leere trotz Weltreise. Vermisst tiefe Verbindungen und Alltagsstruktur.",
+        "themes": ["Einsamkeit", "Weltreise", "Struktur"],
+        "key_facts": ["auf Weltreise in Südostasien", "ist Lehrer", "hat Auszeit genommen"],
+        "messages": []
+      },
+      {
+        "date": "2026-05-01T19:30:00",
+        "summary": "Nutzer berichtete von einem schönen Tag am Meer, aber abends kamen wieder Zweifel ob die Reise der richtige Schritt war.",
+        "themes": ["Zweifel", "Entscheidungen", "Natur"],
+        "key_facts": ["zweifelt manchmal an der Entscheidung zur Reise"],
+        "messages": []
+      }
+    ],
+    "moods": [
+      {"date": "2026-04-28T21:00:00", "value": 4, "note": "einsam aber okay"},
+      {"date": "2026-05-01T20:00:00", "value": 6, "note": "schöner Tag am Meer"}
+    ],
+    "user_profile": "Nutzer ist Lehrer und macht eine längere Weltreise durch Südostasien. Leidet unter innerer Leere und vermisst tiefe menschliche Verbindungen sowie Alltagsstruktur. Zweifelt gelegentlich, ob die Auszeit die richtige Entscheidung war."
+  },
+  "session_messages": [],
+  "test_message": "Hey Miru, ich bin wieder da. Heute war ein merkwürdiger Tag.",
+  "memory_checks": {
+    "summary_must_contain_any": [],
+    "profile_must_contain_any": []
+  },
+  "chat_rubric": [
+    "Begrüßt die Antwort den Nutzer erkennbar als bekannte Person (nicht wie jemanden den Miru zum ersten Mal trifft)?",
+    "Bezieht sich die Antwort natürlich auf etwas aus dem Gedächtnis (z.B. Reise, Einsamkeit, vergangene Gespräche)?",
+    "Stellt die Antwort genau eine Frage?"
+  ]
+}

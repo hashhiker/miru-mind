@@ -1,5 +1,6 @@
 # Nutzerdaten & Secrets – niemals auf GitHub pushen!
 *.json
+!tests/fixtures/*.json
 .therapiebot/
 .miruMind/
 .env
