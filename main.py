@@ -12,6 +12,7 @@ Setup:
 """
 
 import json
+import re
 import datetime
 import os
 from pathlib import Path
@@ -43,7 +44,7 @@ OLLAMA_MODEL = "llama3.2:1b"
 OLLAMA_HOST  = "http://localhost:11434"   # or Mac IP: "http://192.168.1.X:11434"
 
 # Memory settings
-RECENT_SESSIONS_COUNT = 3   # How many past sessions Miru remembers
+RECENT_SESSIONS_COUNT = 3   # How many past session summaries to inject
 MOOD_TREND_DAYS       = 7   # Mood trend over the last N days
 
 DATA_FILE = Path(__file__).parent / "data" / "history.json"
@@ -115,14 +116,132 @@ Anlaufstelle – aber ich kann dir helfen, den ersten Schritt zu einem Fachmann 
 
 Sprache: Immer Deutsch. Nie Englisch, auch wenn der Nutzer Englisch schreibt."""
 
+SUMMARIZATION_PROMPT = """Du analysierst eine abgeschlossene Gesprächssitzung und erstellst eine kompakte Zusammenfassung.
+
+Antworte NUR mit validem JSON in exakt diesem Format (keine weiteren Texte):
+{
+  "summary": "1-2 Sätze über das Gespräch und die emotionale Lage des Nutzers",
+  "themes": ["Thema1", "Thema2"],
+  "key_facts": ["Wichtiger Fakt über den Nutzer", "Weiterer Fakt"],
+  "mood_observed": 5
+}
+
+mood_observed: geschätzte Stimmung des Nutzers am Ende (1-10).
+key_facts: stabile Fakten über den Nutzer (Lebenssituation, wiederkehrende Themen), keine Gesprächsinhalte."""
+
+USER_PROFILE_UPDATE_PROMPT = """Du pflegst das Kurzprofil eines Nutzers für einen Mental-Health-Begleiter.
+
+Dir werden das bisherige Profil und Infos aus einer neuen Sitzung gegeben.
+Schreibe ein aktualisiertes Profil als kurzen Absatz (max. 80 Wörter) auf Deutsch.
+Behalte wichtige stabile Fakten, lass Veraltetes weg. Keine Gesprächsinhalte, nur Persönlichkeit und Lebenssituation.
+Antworte NUR mit dem Profiltext, ohne Formatierung oder Erklärungen."""
+
+# ─── LLM core ────────────────────────────────────────────────────────────────
+
+def _call_llm(messages: list[dict], max_tokens: int = 300, temperature: float = 0.7) -> str:
+    if MODE == "groq":
+        response = groq_client.chat.completions.create(
+            model=GROQ_MODEL,
+            messages=messages,
+            max_tokens=max_tokens,
+            temperature=temperature
+        )
+        return response.choices[0].message.content
+    elif MODE == "local":
+        response = ollama_client.chat(
+            model=OLLAMA_MODEL,
+            messages=messages,
+            options={"temperature": temperature, "num_predict": max_tokens}
+        )
+        return response["message"]["content"]
+    return ""
+
+def get_chat_response(messages: list[dict]) -> str:
+    try:
+        return _call_llm(messages, max_tokens=300, temperature=0.7)
+    except Exception as e:
+        return f"[Fehler: {e}]"
+
 # ─── Memory ───────────────────────────────────────────────────────────────────
 
+def _parse_json_response(raw: str) -> dict | None:
+    """Extracts and parses a JSON object from an LLM response."""
+    try:
+        return json.loads(raw)
+    except json.JSONDecodeError:
+        match = re.search(r'\{.*\}', raw, re.DOTALL)
+        if match:
+            try:
+                return json.loads(match.group())
+            except json.JSONDecodeError:
+                return None
+        return None
+
+def summarize_session(session_messages: list[dict]) -> dict | None:
+    """Calls the LLM to produce a compact structured summary of the session."""
+    if not session_messages:
+        return None
+    transcript = "\n".join(
+        f"{'Nutzer' if m['role'] == 'user' else 'Miru'}: {m['content']}"
+        for m in session_messages
+    )
+    try:
+        raw = _call_llm(
+            [
+                {"role": "system", "content": SUMMARIZATION_PROMPT},
+                {"role": "user", "content": f"Sitzungsinhalt:\n{transcript}"}
+            ],
+            max_tokens=300,
+            temperature=0.2
+        )
+        return _parse_json_response(raw)
+    except Exception:
+        return None
+
+def update_user_profile(data: dict, summary: dict) -> str:
+    """Rewrites the cumulative user profile incorporating the latest session facts."""
+    current_profile = data.get("user_profile", "")
+    new_facts = "; ".join(summary.get("key_facts", []))
+    update_text = f"Neue Sitzung: {summary.get('summary', '')} Neue Fakten: {new_facts}"
+    try:
+        return _call_llm(
+            [
+                {"role": "system", "content": USER_PROFILE_UPDATE_PROMPT},
+                {"role": "user", "content": f"Bisheriges Profil:\n{current_profile or '(noch keins)'}\n\n{update_text}"}
+            ],
+            max_tokens=150,
+            temperature=0.2
+        ).strip()
+    except Exception:
+        return current_profile
+
+def finalize_session(data: dict, session_messages: list[dict]) -> None:
+    """Summarizes the session, updates the user profile, and persists everything."""
+    if not session_messages:
+        return
+    console.print("[dim]Sitzung wird zusammengefasst...[/dim]", end="\r")
+    summary = summarize_session(session_messages)
+    session_entry: dict = {
+        "date": datetime.datetime.now().isoformat(),
+        "messages": session_messages,
+    }
+    if summary:
+        session_entry["summary"] = summary.get("summary", "")
+        session_entry["themes"] = summary.get("themes", [])
+        session_entry["key_facts"] = summary.get("key_facts", [])
+        if summary.get("mood_observed") is not None:
+            session_entry["mood_observed"] = summary["mood_observed"]
+        data["user_profile"] = update_user_profile(data, summary)
+    data["sessions"].append(session_entry)
+    save_history(data)
+
 def build_memory_context(data: dict) -> str:
-    """
-    Builds a context block from past sessions and mood data
-    that is then injected into the system prompt.
-    """
     parts = []
+
+    # ── Cumulative user profile ──
+    user_profile = data.get("user_profile", "")
+    if user_profile:
+        parts.append(f"NUTZERPROFIL:\n{user_profile}")
 
     # ── Mood trend over the last N days ──
     mood_entries = data.get("moods", [])
@@ -137,7 +256,6 @@ def build_memory_context(data: dict) -> str:
             average = sum(values) / len(values)
             trend = "steigend" if values[-1] > values[0] else "fallend" if values[-1] < values[0] else "stabil"
             latest_notes = [entry["note"] for entry in recent[-3:] if entry.get("note")]
-
             mood_text = (
                 f"STIMMUNGSTREND (letzte {MOOD_TREND_DAYS} Tage):\n"
                 f"- Durchschnitt: {average:.1f}/10 (Trend: {trend})\n"
@@ -147,27 +265,29 @@ def build_memory_context(data: dict) -> str:
                 mood_text += f"\n- Notizen: {'; '.join(latest_notes)}"
             parts.append(mood_text)
 
-    # ── Summarise last N sessions ──
+    # ── Session summaries (compact, no raw transcripts) ──
     sessions = data.get("sessions", [])
     if sessions:
         recent_sessions = sessions[-RECENT_SESSIONS_COUNT:]
-        session_summaries = []
-
+        session_lines = []
         for session in recent_sessions:
             date = session["date"][:10]
-            messages = session.get("messages", [])
-            user_messages = [
-                msg["content"] for msg in messages
-                if msg["role"] == "user"
-            ]
-            if user_messages:
-                preview = user_messages[0][:120]
-                session_summaries.append(f"- {date}: \"{preview}...\"")
-
-        if session_summaries:
+            if session.get("summary"):
+                line = f"- {date}: {session['summary']}"
+                themes = ", ".join(session.get("themes", []))
+                if themes:
+                    line += f" [Themen: {themes}]"
+                session_lines.append(line)
+            else:
+                # Fallback for sessions saved before summarization was added
+                messages = session.get("messages", [])
+                user_msgs = [m["content"] for m in messages if m["role"] == "user"]
+                if user_msgs:
+                    session_lines.append(f"- {date}: \"{user_msgs[0][:120]}...\"")
+        if session_lines:
             parts.append(
                 f"VERGANGENE GESPRÄCHE (letzte {len(recent_sessions)} Sitzungen):\n"
-                + "\n".join(session_summaries)
+                + "\n".join(session_lines)
             )
 
     if not parts:
@@ -182,12 +302,10 @@ def build_memory_context(data: dict) -> str:
     )
 
 def build_system_prompt(data: dict) -> str:
-    """Combines the base prompt with the memory context."""
     context = build_memory_context(data)
     if context:
         return SYSTEM_PROMPT_BASE + context
-    else:
-        return SYSTEM_PROMPT_BASE + "\n\nBeginne das Gespräch warm und frage wie es dem Nutzer heute geht."
+    return SYSTEM_PROMPT_BASE + "\n\nBeginne das Gespräch warm und frage wie es dem Nutzer heute geht."
 
 # ─── Data persistence (local, JSON) ───────────────────────────────────────────
 
@@ -210,30 +328,6 @@ def save_mood(data: dict, value: int, note: str = ""):
     }
     data["moods"].append(entry)
     save_history(data)
-
-# ─── Chat logic ───────────────────────────────────────────────────────────────
-
-def get_chat_response(messages: list[dict]) -> str:
-    try:
-        if MODE == "groq":
-            response = groq_client.chat.completions.create(
-                model=GROQ_MODEL,
-                messages=messages,
-                max_tokens=300,
-                temperature=0.7
-            )
-            return response.choices[0].message.content
-
-        elif MODE == "local":
-            response = ollama_client.chat(
-                model=OLLAMA_MODEL,
-                messages=messages,
-                options={"temperature": 0.7, "num_predict": 300}
-            )
-            return response["message"]["content"]
-
-    except Exception as e:
-        return f"[Fehler: {e}]"
 
 # ─── UI helpers ───────────────────────────────────────────────────────────────
 
@@ -276,7 +370,7 @@ def show_mood_history(data: dict):
 def main():
     data = load_history()
 
-    has_memory = bool(data.get("sessions") or data.get("moods"))
+    has_memory = bool(data.get("sessions") or data.get("moods") or data.get("user_profile"))
     system_prompt = build_system_prompt(data)
 
     show_welcome(has_memory)
@@ -300,16 +394,12 @@ def main():
             continue
 
         if user_input == "/beenden":
-            if session_messages:
-                data["sessions"].append({
-                    "date": datetime.datetime.now().isoformat(),
-                    "messages": session_messages
-                })
-                save_history(data)
+            finalize_session(data, session_messages)
             console.print("\n[cyan]Sitzung gespeichert. Auf Wiedersehen! 🌿[/cyan]")
             break
 
         elif user_input == "/neu":
+            finalize_session(data, session_messages)
             data = load_history()
             system_prompt = build_system_prompt(data)
             messages = [{"role": "system", "content": system_prompt}]
