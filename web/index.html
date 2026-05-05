@@ -1,613 +1,641 @@
 <!DOCTYPE html>
-<html lang="de">
+<html lang="de-CH">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Gspänli</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;1,400&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500&family=Instrument+Serif:ital@0;1&family=Geist:wght@300;400;500;600&display=swap" rel="stylesheet" />
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
     :root {
-      --bg:         #F5F2EB;
-      --surface:    #FDFBF7;
-      --border:     #DDD8CE;
-      --green-dark: #2A4A12;
-      --green-mid:  #4A7A28;
-      --green-soft: #7AAD52;
-      --green-pale: #E8F0DF;
-      --text:       #1A2A0A;
-      --text-mid:   #4A5E38;
-      --text-muted: #9BA894;
-      --red:        #B42318;
+      --paper: #f4ede0; --paper-warm: #f8f2e6; --paper-dim: #ebe2d1;
+      --ink: #2a2620; --ink-soft: #4a4137; --ink-mute: #7a6f60; --ink-faint: #a89e8c;
+      --clay: #b85c3c; --clay-deep: #8f4128; --clay-light: #d8916c;
+      --moss: #4a5d3a; --moss-light: #7d8f64;
+      --line: rgba(42,38,32,.12); --line-strong: rgba(42,38,32,.22);
+      --serif: "Fraunces","Georgia",serif;
+      --display: "Instrument Serif","Fraunces",serif;
+      --sans: "Geist",-apple-system,sans-serif;
     }
+    html,body { height:100%; background:#ede8df; }
+    body { font-family:var(--sans); -webkit-font-smoothing:antialiased; }
+    #root { width:100%; max-width:430px; height:100dvh; margin:0 auto; background:var(--paper); display:flex; flex-direction:column; overflow:hidden; position:relative; background-image:radial-gradient(ellipse 800px 300px at 50% 0%,rgba(255,245,225,.6) 0%,transparent 70%); }
 
-    body {
-      font-family: 'DM Sans', sans-serif;
-      background: var(--bg);
-      height: 100dvh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
+    @keyframes gs-breathe { 0%,100%{transform:translateY(0) scaleY(1)} 50%{transform:translateY(-1.5%) scaleY(1.012)} }
+    @keyframes gs-breathe2 { 0%,100%{transform:translateY(0) scaleY(1)} 50%{transform:translateY(-1%) scaleY(1.008)} }
+    @keyframes gs-blink { 0%,92%,100%{transform:scaleY(1)} 95%{transform:scaleY(0.05)} }
+    @keyframes gs-blink2 { 0%,88%,100%{transform:scaleY(1)} 92%{transform:scaleY(0.05)} }
+    @keyframes gs-glow { 0%,100%{opacity:.4} 50%{opacity:.7} }
+    @keyframes gs-dot { 0%,80%,100%{opacity:.3;transform:translateY(0)} 40%{opacity:1;transform:translateY(-3px)} }
+    @keyframes fadeUp { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
+    @keyframes fadeIn { from{opacity:0} to{opacity:1} }
+    @keyframes toastIn { from{opacity:0;transform:translateX(-50%) translateY(8px)} to{opacity:1;transform:translateX(-50%) translateY(0)} }
+    @keyframes toastOut { to{opacity:0;transform:translateX(-50%) translateY(8px)} }
 
-    #root {
-      width: 100%;
-      max-width: 700px;
-      height: 100dvh;
-      display: flex;
-      flex-direction: column;
-      background: var(--surface);
-      box-shadow: 0 0 80px rgba(42,74,18,0.10);
-      position: relative;
-      overflow: hidden;
-    }
+    .gs-body { transform-origin:50% 80%; animation:gs-breathe 4.2s ease-in-out infinite; }
+    .gs-body2 { transform-origin:50% 80%; animation:gs-breathe2 5.1s ease-in-out infinite; }
+    .gs-eye { transform-origin:center; transform-box:fill-box; animation:gs-blink 5.4s ease-in-out infinite; }
+    .gs-eye2 { transform-origin:center; transform-box:fill-box; animation:gs-blink2 6.8s ease-in-out infinite; }
+    .gs-aura { animation:gs-glow 4s ease-in-out infinite; }
 
-    /* ── Onboarding ── */
-    .onboarding {
-      position: absolute; inset: 0;
-      background: var(--green-dark);
-      display: flex; flex-direction: column;
-      align-items: center; justify-content: center;
-      padding: 40px 32px;
-      z-index: 100;
-      animation: fadeIn 0.4s ease;
-    }
-    .onboarding-leaf { font-size: 48px; margin-bottom: 24px; }
-    .onboarding-name {
-      font-family: 'Lora', serif;
-      font-size: 36px; color: #E8F0DF;
-      font-weight: 500; letter-spacing: -0.5px;
-      margin-bottom: 8px;
-    }
-    .onboarding-sub {
-      font-size: 13px; color: rgba(232,240,223,0.6);
-      letter-spacing: 1.2px; text-transform: uppercase;
-      margin-bottom: 40px;
-    }
-    .onboarding-promise {
-      background: rgba(255,255,255,0.06);
-      border: 1px solid rgba(255,255,255,0.12);
-      border-radius: 16px; padding: 24px 28px;
-      max-width: 360px; width: 100%;
-      margin-bottom: 32px;
-    }
-    .promise-line {
-      display: flex; gap: 12px; align-items: flex-start;
-      margin-bottom: 14px; font-size: 14px; color: rgba(232,240,223,0.85);
-      line-height: 1.5;
-    }
-    .promise-line:last-child { margin-bottom: 0; }
-    .promise-icon { font-size: 18px; flex-shrink: 0; margin-top: 1px; }
-    .onboarding-btn {
-      background: var(--green-soft); color: white; border: none;
-      font-family: 'DM Sans', sans-serif; font-size: 15px; font-weight: 500;
-      padding: 14px 36px; border-radius: 30px; cursor: pointer;
-      transition: background 0.15s, transform 0.1s;
-    }
-    .onboarding-btn:hover { background: #8DC462; }
-    .onboarding-btn:active { transform: scale(0.97); }
+    .screen { position:absolute; inset:0; display:flex; flex-direction:column; animation:fadeIn .2s ease; }
+    .icon-btn { width:36px; height:36px; border-radius:18px; border:none; background:transparent; color:var(--ink-soft); display:flex; align-items:center; justify-content:center; cursor:pointer; padding:0; flex-shrink:0; }
+    .icon-btn:hover { background:var(--paper-dim); }
 
-    /* ── Header ── */
-    .header {
-      background: var(--surface);
-      border-bottom: 1px solid var(--border);
-      padding: 13px 20px;
-      display: flex; align-items: center; justify-content: space-between;
-      flex-shrink: 0;
-    }
-    .identity { display: flex; align-items: center; gap: 10px; }
-    .avatar {
-      width: 36px; height: 36px; background: var(--green-dark);
-      border-radius: 50%; display: flex; align-items: center;
-      justify-content: center; font-size: 17px; flex-shrink: 0;
-    }
-    .name { font-family: 'Lora', serif; font-size: 17px; color: var(--text); font-weight: 500; }
-    .tagline { font-size: 10px; color: var(--text-muted); letter-spacing: 0.6px; text-transform: uppercase; margin-top: 1px; }
+    /* Onboarding */
+    .ob-wrap { flex:1; display:flex; flex-direction:column; padding:48px 32px 32px; }
+    .ob-tag { font-size:11px; letter-spacing:.18em; text-transform:uppercase; color:var(--ink-mute); font-weight:500; margin-bottom:16px; }
+    .ob-icon { display:flex; justify-content:center; align-items:center; height:148px; margin-bottom:20px; }
+    .ob-h1 { font-family:var(--display); font-size:36px; line-height:1.05; margin:0 0 14px; color:var(--ink); font-style:italic; }
+    .ob-p { font-size:16px; line-height:1.55; color:var(--ink-soft); flex:1; }
+    .ob-dots { display:flex; justify-content:center; gap:6px; padding:20px 0 0; }
+    .ob-dot { height:4px; border-radius:2px; background:var(--line-strong); transition:all .3s cubic-bezier(.4,0,.2,1); }
+    .ob-btn { width:100%; padding:16px; background:var(--clay); color:#fdf6e8; border:none; border-radius:999px; font-family:var(--sans); font-size:15px; font-weight:500; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:6px; box-shadow:0 8px 20px -10px rgba(184,92,60,.6); transition:transform .15s; }
+    .ob-btn:hover { transform:translateY(-1px); }
+    .ob-btn:active { transform:translateY(0); }
+    .ob-btn:disabled { opacity:.4; cursor:not-allowed; transform:none; }
+    .char-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:16px; }
+    .char-card { padding:20px 12px 16px; border-radius:18px; cursor:pointer; display:flex; flex-direction:column; align-items:center; gap:8px; background:transparent; border:1.5px solid var(--line-strong); transition:all .2s; font-family:inherit; text-align:center; }
+    .char-card.sel { background:var(--paper-warm); border-color:var(--clay); }
+    .char-name { font-family:var(--serif); font-size:22px; color:var(--ink); }
+    .char-trait { font-size:11.5px; color:var(--ink-mute); }
 
-    .header-actions { display: flex; gap: 7px; align-items: center; }
-    .btn-pill {
-      background: var(--green-pale); border: 1px solid #C2D9A8;
-      color: var(--green-dark); font-family: 'DM Sans', sans-serif;
-      font-size: 12px; font-weight: 500; padding: 6px 13px;
-      border-radius: 20px; cursor: pointer; transition: background 0.15s;
-      white-space: nowrap;
-    }
-    .btn-pill:hover { background: #D6E8C4; }
-    .btn-pill.ghost { background: transparent; border-color: var(--border); color: var(--text-muted); }
-    .btn-pill.ghost:hover { background: var(--green-pale); color: var(--green-dark); }
-    .btn-pill:disabled { opacity: 0.4; cursor: not-allowed; }
+    /* Chat */
+    .chat-hdr { padding:52px 18px 10px; display:flex; align-items:center; gap:10px; border-bottom:1px solid var(--line); flex-shrink:0; }
+    .chat-name { font-family:var(--serif); font-size:17px; color:var(--ink); line-height:1.1; }
+    .chat-sub { font-size:11px; color:var(--ink-mute); display:flex; align-items:center; gap:5px; margin-top:2px; }
+    .online { width:6px; height:6px; border-radius:3px; background:var(--moss-light); }
+    .priv-pill { margin:8px 20px 2px; font-size:11px; color:var(--ink-mute); background:var(--paper-warm); border:1px solid var(--line); border-radius:999px; padding:5px 12px; display:flex; align-items:center; justify-content:center; gap:6px; flex-shrink:0; }
+    .messages { flex:1; overflow-y:auto; padding:10px 20px 8px; display:flex; flex-direction:column; gap:10px; }
+    .messages::-webkit-scrollbar { width:3px; }
+    .messages::-webkit-scrollbar-thumb { background:var(--line-strong); border-radius:3px; }
+    .msg { display:flex; flex-direction:column; animation:fadeUp .22s ease; }
+    .msg.me { align-items:flex-end; }
+    .msg.them { align-items:flex-start; max-width:88%; }
+    .bub-them { font-family:var(--serif); font-size:15px; line-height:1.55; color:var(--ink); }
+    .bub-me { background:var(--clay); color:#fdf6e8; padding:10px 14px; border-radius:20px; border-bottom-right-radius:5px; font-size:14px; line-height:1.45; max-width:82%; }
+    .day-mark { text-align:center; font-size:11px; color:var(--ink-faint); letter-spacing:.15em; text-transform:uppercase; margin:6px 0; }
+    .typing-wrap { display:flex; gap:4px; padding:4px 0; }
+    .tdot { width:7px; height:7px; border-radius:4px; background:var(--ink-faint); display:inline-block; }
+    .input-area { border-top:1px solid var(--line); padding:10px 14px 22px; flex-shrink:0; }
+    .input-row { display:flex; align-items:flex-end; gap:8px; background:var(--paper-warm); border:1px solid var(--line); border-radius:24px; padding:8px 8px 8px 18px; transition:border-color .15s; }
+    .input-row:focus-within { border-color:var(--clay-light); }
+    textarea { flex:1; background:transparent; border:none; outline:none; font-family:var(--sans); font-size:14px; color:var(--ink); resize:none; line-height:1.5; max-height:110px; min-height:22px; overflow-y:auto; }
+    textarea::placeholder { color:var(--ink-faint); font-style:italic; }
+    textarea:disabled { opacity:.5; }
+    .send-btn { width:38px; height:38px; border-radius:19px; background:var(--clay); border:none; color:#fdf6e8; cursor:pointer; flex-shrink:0; display:flex; align-items:center; justify-content:center; transition:transform .12s,background .15s; }
+    .send-btn:hover { background:var(--clay-deep); }
+    .send-btn:active { transform:scale(.93); }
+    .send-btn:disabled { background:var(--ink-faint); cursor:not-allowed; transform:none; }
+    .disc { text-align:center; font-size:10px; color:var(--ink-faint); margin-top:6px; line-height:1.5; }
+    .disc a { color:var(--ink-mute); text-decoration:none; }
+    .disc a:hover { text-decoration:underline; }
+    .sug { padding:12px 18px; text-align:left; background:var(--paper-warm); border:1px solid var(--line); border-radius:14px; cursor:pointer; font-family:var(--serif); font-size:14px; color:var(--ink-soft); font-style:italic; width:100%; }
+    .sug:hover { background:var(--paper-dim); }
 
-    /* ── Check-in Panel ── */
-    .checkin-panel {
-      background: #F0EDE4; border-bottom: 1px solid var(--border);
-      padding: 16px 20px; flex-shrink: 0;
-      animation: slideDown 0.2s ease;
+    /* Check-in */
+    .page-hdr { padding:52px 18px 14px; display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid var(--line); flex-shrink:0; }
+    .page-ttl { font-size:11px; letter-spacing:.18em; text-transform:uppercase; color:var(--ink-mute); }
+    .ci-wrap { flex:1; overflow-y:auto; padding:24px 24px 16px; display:flex; flex-direction:column; gap:22px; }
+    .ci-h2 { font-family:var(--display); font-size:30px; line-height:1.1; color:var(--ink); font-style:italic; }
+    .ci-lbl { font-size:13px; color:var(--ink-mute); margin-bottom:10px; }
+    .ci-range {
+      -webkit-appearance:none; appearance:none;
+      width:100%; height:4px; border-radius:2px;
+      background:var(--line-strong); outline:none; cursor:pointer;
+      margin:14px 0 6px;
     }
-    .checkin-title {
-      font-size: 11px; color: var(--text-muted); text-transform: uppercase;
-      letter-spacing: 0.8px; margin-bottom: 14px;
-      display: flex; justify-content: space-between; align-items: center;
+    .ci-range::-webkit-slider-thumb {
+      -webkit-appearance:none; appearance:none;
+      width:24px; height:24px; border-radius:50%;
+      background:var(--clay); border:3px solid var(--paper);
+      box-shadow:0 4px 12px rgba(184,92,60,.4); cursor:pointer;
     }
-    .checkin-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
-    .checkin-row:last-child { margin-bottom: 0; }
-    .checkin-label { font-size: 12px; color: var(--text-mid); font-weight: 500; min-width: 64px; }
-    .mood-slider { flex: 1; accent-color: var(--green-dark); cursor: pointer; }
-    .mood-num { font-size: 14px; font-weight: 500; min-width: 28px; color: var(--green-dark); }
-    .btn-group { display: flex; gap: 5px; flex-wrap: wrap; }
-    .btn-toggle {
-      background: white; border: 1px solid var(--border);
-      color: var(--text-mid); font-family: 'DM Sans', sans-serif;
-      font-size: 12px; padding: 5px 12px; border-radius: 16px;
-      cursor: pointer; transition: all 0.12s;
+    .ci-range::-moz-range-thumb {
+      width:22px; height:22px; border-radius:50%;
+      background:var(--clay); border:3px solid var(--paper);
+      box-shadow:0 4px 12px rgba(184,92,60,.4); cursor:pointer;
     }
-    .btn-toggle.active {
-      background: var(--green-dark); border-color: var(--green-dark);
-      color: white; font-weight: 500;
-    }
-    .checkin-actions { display: flex; gap: 8px; margin-top: 12px; justify-content: flex-end; }
-    .btn-save {
-      background: var(--green-dark); color: white; border: none;
-      font-family: 'DM Sans', sans-serif; font-size: 12px; font-weight: 500;
-      padding: 7px 16px; border-radius: 20px; cursor: pointer; transition: background 0.15s;
-    }
-    .btn-save:hover { background: var(--green-mid); }
-    .btn-x { background: transparent; border: none; color: var(--text-muted); cursor: pointer; font-size: 18px; line-height: 1; }
+    .ci-val { font-family:var(--serif); font-size:32px; color:var(--clay); font-weight:500; line-height:1; }
+    .ci-val small { font-size:16px; color:var(--ink-faint); font-family:var(--sans); font-weight:400; }
+    .choice-row { display:flex; gap:8px; }
+    .choice { flex:1; padding:12px 8px; border-radius:12px; cursor:pointer; background:var(--paper-warm); border:1px solid var(--line); font-family:var(--sans); font-size:14px; font-weight:500; color:var(--ink-soft); transition:all .15s; }
+    .choice.on { background:var(--clay); border-color:var(--clay); color:#fdf6e8; }
 
-    /* ── History Panel ── */
-    .history-panel {
-      background: #F0EDE4; border-bottom: 1px solid var(--border);
-      padding: 14px 20px; flex-shrink: 0; max-height: 200px; overflow-y: auto;
-      animation: slideDown 0.2s ease;
-    }
-    .history-title { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 10px; display: flex; justify-content: space-between; }
-    .history-row { display: flex; align-items: center; gap: 8px; padding: 5px 0; border-bottom: 1px solid var(--border); font-size: 12px; color: var(--text-mid); }
-    .history-row:last-child { border-bottom: none; }
-    .h-mood { font-weight: 500; min-width: 34px; }
-    .h-bar { flex: 1; height: 4px; background: #DDD8CE; border-radius: 2px; overflow: hidden; }
-    .h-bar-fill { height: 100%; border-radius: 2px; background: var(--green-soft); }
-    .h-icons { display: flex; gap: 4px; font-size: 13px; }
-    .h-date { color: var(--text-muted); font-size: 11px; min-width: 70px; text-align: right; }
+    /* Verlauf */
+    .vl-wrap { flex:1; overflow-y:auto; padding:24px 24px 24px; }
+    .vl-pat { background:var(--paper-warm); border:1px solid var(--line); border-radius:18px; padding:20px; margin-bottom:16px; position:relative; overflow:hidden; }
+    .vl-pat::before { content:""; position:absolute; right:-20px; top:-20px; width:100px; height:100px; border-radius:50%; background:var(--clay); opacity:.08; }
+    .vl-pat-tag { font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:var(--ink-mute); font-weight:500; margin-bottom:10px; display:flex; align-items:center; gap:7px; }
+    .vl-pat-dot { width:6px; height:6px; border-radius:3px; background:var(--clay); }
+    .vl-pat-txt { font-family:var(--serif); font-size:18px; line-height:1.4; color:var(--ink); }
+    .vl-bars { height:80px; display:flex; align-items:flex-end; gap:3px; background:repeating-linear-gradient(180deg,var(--line) 0 1px,transparent 1px 16px); margin-bottom:16px; }
+    .vl-bar { flex:1; border-radius:3px 3px 0 0; opacity:.85; }
+    .mini-stats { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:16px; }
+    .mini-stat { padding:14px 16px; background:var(--paper-warm); border:1px solid var(--line); border-radius:14px; }
+    .ms-lbl { font-size:11px; color:var(--ink-mute); margin-bottom:4px; }
+    .ms-val { font-family:var(--serif); font-size:24px; color:var(--ink); font-weight:500; }
+    .ms-sub { font-size:11px; color:var(--ink-faint); margin-top:2px; }
+    .vl-disc { padding:14px 16px; border:1px dashed var(--line-strong); border-radius:14px; font-size:12px; color:var(--ink-mute); line-height:1.5; }
 
-    /* ── Messages ── */
-    .messages {
-      flex: 1; overflow-y: auto; padding: 20px 20px 10px;
-      display: flex; flex-direction: column; gap: 14px;
-    }
-    .messages::-webkit-scrollbar { width: 3px; }
-    .messages::-webkit-scrollbar-thumb { background: #C8D9B8; border-radius: 3px; }
-
-    .msg { display: flex; gap: 9px; animation: fadeUp 0.22s ease; }
-    .msg.user { flex-direction: row-reverse; }
-
-    .msg-av {
-      width: 30px; height: 30px; border-radius: 50%;
-      flex-shrink: 0; display: flex; align-items: center;
-      justify-content: center; font-size: 13px; margin-top: 2px;
-    }
-    .msg-av.g { background: var(--green-dark); }
-    .msg-av.u { background: var(--green-soft); color: white; font-size: 10px; font-weight: 500; }
-
-    .bubble {
-      max-width: 74%; padding: 11px 15px; border-radius: 18px;
-      font-size: 14px; line-height: 1.65; color: var(--text);
-    }
-    .msg.g .bubble {
-      background: white; border: 1px solid var(--border);
-      border-bottom-left-radius: 4px; font-weight: 300;
-    }
-    .msg.user .bubble {
-      background: var(--green-dark); color: #E8F0DF;
-      border-bottom-right-radius: 4px;
-    }
-    .msg-time { font-size: 10px; color: #C0B8AD; margin-top: 3px; padding: 0 3px; }
-    .msg.user .msg-time { text-align: right; }
-
-    .typing { display: flex; align-items: center; gap: 5px; padding: 13px 15px; background: white; border: 1px solid var(--border); border-radius: 18px; border-bottom-left-radius: 4px; width: fit-content; }
-    .dot { width: 7px; height: 7px; background: var(--green-soft); border-radius: 50%; animation: pulse 1.2s ease-in-out infinite; }
-    .dot:nth-child(2) { animation-delay: 0.2s; }
-    .dot:nth-child(3) { animation-delay: 0.4s; }
-
-    /* ── Input ── */
-    .input-area { background: var(--surface); border-top: 1px solid var(--border); padding: 13px 20px 17px; flex-shrink: 0; }
-    .input-row {
-      display: flex; gap: 9px; align-items: flex-end;
-      background: white; border: 1px solid #C2D9A8; border-radius: 24px;
-      padding: 9px 13px 9px 17px; transition: border-color 0.15s;
-    }
-    .input-row:focus-within { border-color: var(--green-soft); box-shadow: 0 0 0 3px rgba(122,173,82,0.12); }
-    textarea {
-      flex: 1; background: transparent; border: none; outline: none;
-      font-family: 'DM Sans', sans-serif; font-size: 14px; color: var(--text);
-      resize: none; line-height: 1.5; max-height: 110px; min-height: 22px; overflow-y: auto;
-    }
-    textarea::placeholder { color: #C0B8AD; }
-    textarea:disabled { opacity: 0.5; }
-    .send-btn {
-      background: var(--green-dark); border: none; color: white;
-      width: 32px; height: 32px; border-radius: 50%; cursor: pointer;
-      display: flex; align-items: center; justify-content: center;
-      flex-shrink: 0; transition: background 0.15s, transform 0.1s;
-    }
-    .send-btn:hover { background: var(--green-mid); }
-    .send-btn:active { transform: scale(0.93); }
-    .send-btn:disabled { background: #C8D9B8; cursor: not-allowed; transform: none; }
-
-    .disclaimer { text-align: center; font-size: 10px; color: #C0B8AD; margin-top: 7px; line-height: 1.5; }
-    .disclaimer a { color: var(--text-muted); text-decoration: none; }
-    .disclaimer a:hover { text-decoration: underline; }
-
-    .error-banner { background: #FEF3F2; border: 1px solid #FECDCA; color: var(--red); font-size: 12px; padding: 8px 16px; text-align: center; flex-shrink: 0; }
-
-    /* ── Animations ── */
-    /* ── Auto-Save Toast ── */
-    .toast {
-      position: absolute; bottom: 80px; left: 50%; transform: translateX(-50%);
-      background: var(--green-dark); color: #E8F0DF;
-      font-size: 12px; font-weight: 500; padding: 8px 18px;
-      border-radius: 20px; white-space: nowrap; pointer-events: none;
-      animation: toastIn 0.3s ease, toastOut 0.3s ease 2.7s forwards;
-      z-index: 50;
-    }
-    @keyframes toastIn { from { opacity: 0; transform: translateX(-50%) translateY(6px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
-    @keyframes toastOut { to { opacity: 0; transform: translateX(-50%) translateY(6px); } }
-
-    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-    @keyframes fadeUp { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
-    @keyframes slideDown { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: translateY(0); } }
-    @keyframes pulse { 0%, 80%, 100% { opacity: 0.3; transform: scale(0.8); } 40% { opacity: 1; transform: scale(1); } }
+    /* Nav + Toast */
+    .nav-bar { display:flex; justify-content:space-around; border-top:1px solid var(--line); padding:8px 0 18px; background:var(--paper); flex-shrink:0; }
+    .nav-btn { display:flex; flex-direction:column; align-items:center; gap:3px; background:none; border:none; cursor:pointer; color:var(--ink-mute); font-family:var(--sans); font-size:10px; padding:6px 16px; border-radius:12px; transition:color .15s; }
+    .nav-btn.on { color:var(--clay); }
+    .nav-btn:hover { color:var(--ink-soft); }
+    .toast { position:absolute; bottom:80px; left:50%; transform:translateX(-50%); background:var(--ink); color:var(--paper-warm); font-size:12px; font-weight:500; padding:8px 18px; border-radius:20px; white-space:nowrap; pointer-events:none; animation:toastIn .3s ease,toastOut .3s ease 2.7s forwards; z-index:50; }
+    .err-bar { background:#fef3f2; border-bottom:1px solid #fecdca; color:#b42318; font-size:12px; padding:8px 20px; text-align:center; flex-shrink:0; }
   </style>
 </head>
 <body>
-  <div id="root"></div>
+<div id="root"></div>
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<script type="text/babel">
+const {useState,useRef,useEffect,useCallback} = React;
+const API="";
+const fmtT=d=>d.toLocaleTimeString("de-CH",{hour:"2-digit",minute:"2-digit"});
+const fmtD=s=>new Date(s).toLocaleDateString("de-CH",{day:"2-digit",month:"2-digit"});
+const moodCol=v=>v>=7?"var(--moss)":v>=5?"var(--clay-light)":"var(--ink-faint)";
 
-  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+function Sora({size=120}){
+  return(
+    <svg viewBox="0 0 200 200" width={size} height={size} aria-label="Sora">
+      <defs>
+        <radialGradient id="sa" cx="50%" cy="55%" r="50%"><stop offset="0%" stopColor="#b85c3c" stopOpacity="0.15"/><stop offset="70%" stopColor="#b85c3c" stopOpacity="0"/></radialGradient>
+        <radialGradient id="sb" cx="35%" cy="35%" r="75%"><stop offset="0%" stopColor="#e8c9a8"/><stop offset="100%" stopColor="#c99a72"/></radialGradient>
+      </defs>
+      <circle className="gs-aura" cx="100" cy="115" r="85" fill="url(#sa)"/>
+      <g className="gs-body">
+        <ellipse cx="78" cy="48" rx="6" ry="14" fill="#c99a72" transform="rotate(-12 78 48)"/>
+        <ellipse cx="122" cy="44" rx="6" ry="16" fill="#c99a72" transform="rotate(8 122 44)"/>
+        <circle cx="76" cy="36" r="4" fill="#8f4128" opacity=".7"/>
+        <circle cx="124" cy="32" r="4.5" fill="#8f4128" opacity=".7"/>
+        <path d="M100 60C138 60,158 88,158 122C158 158,132 178,100 178C68 178,42 158,42 122C42 88,62 60,100 60Z" fill="url(#sb)"/>
+        <ellipse cx="68" cy="138" rx="9" ry="6" fill="#d8916c" opacity=".55"/>
+        <ellipse cx="132" cy="138" rx="9" ry="6" fill="#d8916c" opacity=".55"/>
+        <ellipse className="gs-eye" cx="80" cy="118" rx="4.5" ry="6" fill="#2a2620"/>
+        <ellipse className="gs-eye" cx="120" cy="116" rx="4.5" ry="6" fill="#2a2620"/>
+        <circle cx="81.5" cy="116" r="1.4" fill="#fff" opacity=".9"/>
+        <circle cx="121.5" cy="114" r="1.4" fill="#fff" opacity=".9"/>
+        <path d="M92 142Q100 148 108 142" stroke="#2a2620" strokeWidth="2" fill="none" strokeLinecap="round" opacity=".75"/>
+      </g>
+    </svg>
+  );
+}
 
-  <script type="text/babel">
-    const { useState, useRef, useEffect, useCallback } = React;
-    const API = "";
-    const fmt = d => d.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" });
-    const fmtDate = s => new Date(s).toLocaleDateString("de-CH", { day: "2-digit", month: "2-digit" });
+function Boedi({size=120}){
+  return(
+    <svg viewBox="0 0 200 200" width={size} height={size} aria-label="Bödi">
+      <defs>
+        <radialGradient id="ba" cx="50%" cy="60%" r="55%"><stop offset="0%" stopColor="#8f4128" stopOpacity="0.14"/><stop offset="70%" stopColor="#8f4128" stopOpacity="0"/></radialGradient>
+        <radialGradient id="bb" cx="40%" cy="40%" r="70%"><stop offset="0%" stopColor="#c99a6a"/><stop offset="100%" stopColor="#9a6a3e"/></radialGradient>
+      </defs>
+      <circle className="gs-aura" cx="100" cy="120" r="88" fill="url(#ba)"/>
+      <g className="gs-body2">
+        <path d="M88 56Q92 42 96 56" fill="#9a6a3e"/>
+        <path d="M96 50Q102 34 108 50" fill="#9a6a3e"/>
+        <path d="M106 56Q112 44 116 58" fill="#9a6a3e"/>
+        <path d="M100 64C144 64,168 96,168 130C168 162,142 180,100 180C58 180,32 162,32 130C32 96,56 64,100 64Z" fill="url(#bb)"/>
+        <ellipse cx="60" cy="142" rx="10" ry="6.5" fill="#b87648" opacity=".5"/>
+        <ellipse cx="140" cy="142" rx="10" ry="6.5" fill="#b87648" opacity=".5"/>
+        <ellipse className="gs-eye2" cx="78" cy="124" rx="5" ry="6.5" fill="#2a2620"/>
+        <ellipse className="gs-eye2" cx="122" cy="124" rx="5" ry="6.5" fill="#2a2620"/>
+        <circle cx="79.5" cy="122" r="1.5" fill="#fff" opacity=".9"/>
+        <circle cx="123.5" cy="122" r="1.5" fill="#fff" opacity=".9"/>
+        <path d="M88 148Q100 154 112 148" stroke="#2a2620" strokeWidth="2.4" fill="none" strokeLinecap="round" opacity=".8"/>
+        <circle cx="148" cy="120" r="2" fill="#5a3a1c" opacity=".35"/>
+      </g>
+    </svg>
+  );
+}
 
-    const SLEEP_LABELS = { gut: "🌙 Gut", mittel: "🌙 Mittel", schlecht: "🌙 Schlecht" };
-    const MOOD_COLOR = v => v >= 7 ? "#4A7A28" : v >= 4 ? "#B8860B" : "#B42318";
+function Avtr({which,size=34}){
+  const C=which==="boedi"?Boedi:Sora;
+  return <span style={{width:size,height:size,borderRadius:"50%",display:"inline-flex",alignItems:"center",justifyContent:"center",background:"#ebe2d1",overflow:"hidden",flexShrink:0}}><C size={size*1.4}/></span>;
+}
 
-    function App() {
-      const [onboarded, setOnboarded]   = useState(() => !!localStorage.getItem("gspaenli_ob"));
-      const [messages, setMessages]     = useState([]);
-      const [input, setInput]           = useState("");
-      const [loading, setLoading]       = useState(false);
-      const [finalizing, setFinalizing] = useState(false);
-      const [showCheckin, setShowCheckin] = useState(false);
-      const [showHistory, setShowHistory] = useState(false);
-      const [history, setHistory]       = useState({});
-      const [checkinLog, setCheckinLog] = useState([]);
-      const [error, setError]           = useState("");
-      const [done, setDone]             = useState(false);
-      const [savedToast, setSavedToast] = useState(false);
-      // Check-in state
-      const [ciMood, setCiMood]         = useState(6);
-      const [ciSleep, setCiSleep]       = useState("mittel");
-      const [ciExercise, setCiExercise] = useState(false);
-      const endRef        = useRef(null);
-      const taRef         = useRef(null);
-      const greeted       = useRef(false);
-      const messagesRef   = useRef([]);    // immer aktuell, auch in Event-Listenern
-      const doneRef       = useRef(false);
-      const inactiveTimer = useRef(null);
-      const INACTIVITY_MS = 10 * 60 * 1000; // 10 Minuten
+function PrivIcon(){return(
+  <svg width="148" height="128" viewBox="0 0 160 140">
+    <path d="M50 110Q50 90 60 80L75 70Q85 65 90 70L95 78Q110 78 110 95L110 115Q110 125 100 125L60 125Q50 125 50 110Z" fill="#e8c9a8" stroke="var(--ink-soft)" strokeWidth="1.5" strokeLinejoin="round"/>
+    <g transform="translate(80 50)"><path d="M0 8Q-10-5 0-10Q10-5 0 8Z" fill="var(--clay)" stroke="var(--ink)" strokeWidth="1.2"/><circle cx="0" cy="-2" r="2.5" fill="#fdf6e8"/></g>
+    <g stroke="var(--clay)" strokeWidth="1.2" strokeLinecap="round" opacity=".5"><line x1="80" y1="20" x2="80" y2="14"/><line x1="100" y1="28" x2="105" y2="22"/><line x1="60" y1="28" x2="55" y2="22"/></g>
+  </svg>
+);}
+function TherapyIcon(){return(
+  <svg width="148" height="128" viewBox="0 0 160 140">
+    <g opacity=".35"><rect x="20" y="60" width="50" height="20" rx="4" fill="none" stroke="var(--ink-mute)" strokeWidth="1.5"/><line x1="20" y1="80" x2="20" y2="95" stroke="var(--ink-mute)" strokeWidth="1.5"/><line x1="70" y1="80" x2="70" y2="95" stroke="var(--ink-mute)" strokeWidth="1.5"/><line x1="22" y1="58" x2="68" y2="92" stroke="var(--clay)" strokeWidth="2" strokeLinecap="round"/></g>
+    <g transform="translate(95 50)"><ellipse cx="20" cy="35" rx="22" ry="5" fill="var(--clay-light)" stroke="var(--ink)" strokeWidth="1.5"/><line x1="2" y1="38" x2="6" y2="58" stroke="var(--ink)" strokeWidth="1.5" strokeLinecap="round"/><line x1="38" y1="38" x2="34" y2="58" stroke="var(--ink)" strokeWidth="1.5" strokeLinecap="round"/><line x1="20" y1="40" x2="20" y2="60" stroke="var(--ink)" strokeWidth="1.5" strokeLinecap="round"/><path d="M12 20L12 33L28 33L28 20Z" fill="#fdf6e8" stroke="var(--ink)" strokeWidth="1.5" strokeLinejoin="round"/><path d="M28 23Q33 23 33 27Q33 31 28 31" fill="none" stroke="var(--ink)" strokeWidth="1.5"/></g>
+  </svg>
+);}
+function MemIcon(){return(
+  <svg width="148" height="128" viewBox="0 0 160 140">
+    <g transform="translate(35 22)"><rect x="0" y="0" width="90" height="100" rx="6" fill="#fdf6e8" stroke="var(--ink)" strokeWidth="1.5"/><line x1="12" y1="0" x2="12" y2="100" stroke="var(--ink-faint)" strokeWidth="1"/><line x1="22" y1="22" x2="78" y2="22" stroke="var(--ink-faint)" strokeWidth="1"/><line x1="22" y1="36" x2="68" y2="36" stroke="var(--ink-faint)" strokeWidth="1"/><line x1="22" y1="50" x2="78" y2="50" stroke="var(--ink-faint)" strokeWidth="1"/><line x1="22" y1="64" x2="58" y2="64" stroke="var(--ink-faint)" strokeWidth="1"/><circle cx="18" cy="78" r="3" fill="var(--clay)"/><line x1="22" y1="78" x2="78" y2="78" stroke="var(--ink-soft)" strokeWidth="1.5"/><line x1="22" y1="86" x2="64" y2="86" stroke="var(--ink-soft)" strokeWidth="1.2"/></g>
+    <path d="M130 60Q138 60 138 50Q138 40 130 40" fill="none" stroke="var(--clay)" strokeWidth="1.5" strokeDasharray="2 3"/>
+    <g transform="translate(120 30)"><circle r="10" fill="var(--moss)" opacity=".2"/><path d="M-4 0L0 4L5-4" stroke="var(--moss)" strokeWidth="1.8" fill="none" strokeLinecap="round" strokeLinejoin="round"/></g>
+  </svg>
+);}
 
-      useEffect(() => { endRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages, loading]);
-
-      // messagesRef synchron halten
-      useEffect(() => { messagesRef.current = messages; }, [messages]);
-
-      // History laden
-      useEffect(() => {
-        fetch(`${API}/api/history`)
-          .then(r => r.json())
-          .then(data => {
-            setHistory(data);
-            setCheckinLog((data.checkins || []).slice(-30));
-          })
-          .catch(() => {});
-      }, []);
-
-      const callChat = useCallback(async (msgs) => {
-        const res = await fetch(`${API}/api/chat`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ messages: msgs, history }),
-        });
-        if (!res.ok) throw new Error(`Server-Fehler ${res.status}`);
-        return (await res.json()).response;
-      }, [history]);
-
-      // Begrüssung
-      useEffect(() => {
-        if (!onboarded || greeted.current) return;
-        greeted.current = true;
-        setLoading(true);
-        callChat([{ role: "user", content: "Hallo." }])
-          .then(text => setMessages([{ role: "assistant", text, time: new Date() }]))
-          .catch(() => {
-            setError("Server nicht erreichbar. Läuft server.py auf Port 8000?");
-            setMessages([{ role: "assistant", text: "Hoi. Schön dass du da bist – wie geht's dir gerade?", time: new Date() }]);
-          })
-          .finally(() => setLoading(false));
-      }, [onboarded, callChat]);
-
-      // ── Auto-Save Logik ──────────────────────────────────────────────────────
-      const silentFinalize = useCallback(async () => {
-        const msgs = messagesRef.current;
-        // Nur speichern wenn es echte User-Nachrichten gibt und noch nicht gespeichert
-        const hasUserMsgs = msgs.some(m => m.role === "user");
-        if (!hasUserMsgs || doneRef.current) return;
-        doneRef.current = true;
-        setDone(true);
-        try {
-          await fetch(`${API}/api/finalize`, {
-            method: "POST", headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ session_messages: msgs.map(m => ({ role: m.role, content: m.text })) }),
-          });
-          setSavedToast(true);
-          setTimeout(() => setSavedToast(false), 3000);
-        } catch {}
-      }, []);
-
-      // Tab wird geschlossen oder gewechselt → sofort speichern (via sendBeacon, kein async nötig)
-      useEffect(() => {
-        const handleVisibility = () => {
-          if (document.visibilityState === "hidden") silentFinalize();
-        };
-        const handleUnload = () => {
-          const msgs = messagesRef.current;
-          if (!msgs.some(m => m.role === "user") || doneRef.current) return;
-          // sendBeacon funktioniert zuverlässig beim Tab-Schliessen
-          const blob = new Blob(
-            [JSON.stringify({ session_messages: msgs.map(m => ({ role: m.role, content: m.text })) })],
-            { type: "application/json" }
-          );
-          navigator.sendBeacon(`${API}/api/finalize`, blob);
-        };
-        document.addEventListener("visibilitychange", handleVisibility);
-        window.addEventListener("pagehide", handleUnload);
-        return () => {
-          document.removeEventListener("visibilitychange", handleVisibility);
-          window.removeEventListener("pagehide", handleUnload);
-        };
-      }, [silentFinalize]);
-
-      // Inaktivitäts-Timer: nach 10 Min ohne neue Nachricht automatisch speichern
-      const resetInactivityTimer = useCallback(() => {
-        if (inactiveTimer.current) clearTimeout(inactiveTimer.current);
-        inactiveTimer.current = setTimeout(() => {
-          silentFinalize();
-        }, INACTIVITY_MS);
-      }, [silentFinalize]);
-
-      // ─────────────────────────────────────────────────────────────────────────
-
-      const send = async () => {
-        const text = input.trim();
-        if (!text || loading || done) return;
-        setInput("");
-        if (taRef.current) taRef.current.style.height = "22px";
-        setError("");
-        const userMsg = { role: "user", text, time: new Date() };
-        const updated = [...messages, userMsg];
-        setMessages(updated);
-        setLoading(true);
-        try {
-          const reply = await callChat(updated.map(m => ({ role: m.role, content: m.text })));
-          setMessages(prev => [...prev, { role: "assistant", text: reply, time: new Date() }]);
-          resetInactivityTimer(); // Timer nach jeder Antwort neu starten
-        } catch (e) {
-          setError(e.message);
-        } finally { setLoading(false); }
-      };
-
-      const onKey = e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); } };
-      const onInput = e => {
-        setInput(e.target.value);
-        e.target.style.height = "22px";
-        e.target.style.height = Math.min(e.target.scrollHeight, 110) + "px";
-      };
-
-      const finalize = async () => {
-        if (finalizing || done || messages.length === 0) return;
-        setFinalizing(true);
-        try {
-          await fetch(`${API}/api/finalize`, {
-            method: "POST", headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ session_messages: messages.map(m => ({ role: m.role, content: m.text })) }),
-          });
-          doneRef.current = true;
-          setDone(true);
-          setMessages(prev => [...prev, { role: "assistant", text: "Gespräch gespeichert 🌿 Beim nächsten Mal erinnere ich mich. Bis bald.", time: new Date() }]);
-        } catch { setError("Konnte nicht gespeichert werden."); }
-        finally { setFinalizing(false); }
-      };
-
-      const saveCheckin = async () => {
-        const entry = { mood: ciMood, sleep: ciSleep, exercise: ciExercise, date: new Date().toISOString(), source: "manual" };
-        setCheckinLog(prev => [...prev, entry]);
-        setShowCheckin(false); setShowHistory(true);
-        try {
-          await fetch(`${API}/api/checkin`, {
-            method: "POST", headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ mood: ciMood, sleep: ciSleep, exercise: ciExercise }),
-          });
-        } catch {}
-      };
-
-      const handleOnboard = () => {
-        localStorage.setItem("gspaenli_ob", "1");
-        setOnboarded(true);
-      };
-
-      return (
-        <>
-          {/* Onboarding */}
-          {!onboarded && (
-            <div className="onboarding">
-              <div className="onboarding-leaf">🌿</div>
-              <div className="onboarding-name">Gspänli</div>
-              <div className="onboarding-sub">Dein privater Begleiter</div>
-              <div className="onboarding-promise">
-                <div className="promise-line">
-                  <span className="promise-icon">🔒</span>
-                  <span>Alles bleibt auf deinem Gerät. Kein Server, kein Unternehmen, niemand sonst liest mit – nie.</span>
-                </div>
-                <div className="promise-line">
-                  <span className="promise-icon">🌿</span>
-                  <span>Gspänli ist dein Raum für die Momente wo du einfach reden musst – ohne Bewertung, ohne Ratschläge.</span>
-                </div>
-                <div className="promise-line">
-                  <span className="promise-icon">🧠</span>
-                  <span>Gspänli erinnert sich und erkennt mit der Zeit was dir gut tut – und was nicht.</span>
-                </div>
-              </div>
-              <button className="onboarding-btn" onClick={handleOnboard}>Los gehts</button>
-            </div>
-          )}
-
-          {/* Header */}
-          <header className="header">
-            <div className="identity">
-              <div className="avatar">🌿</div>
-              <div>
-                <div className="name">Gspänli</div>
-                <div className="tagline">Dein privater Begleiter</div>
-              </div>
-            </div>
-            <div className="header-actions">
-              {checkinLog.length > 0 && (
-                <button className="btn-pill ghost" onClick={() => { setShowHistory(h => !h); setShowCheckin(false); }}>
-                  {showHistory ? "Schliessen" : `Verlauf (${checkinLog.length})`}
-                </button>
-              )}
-              <button className="btn-pill ghost" onClick={() => { setShowCheckin(c => !c); setShowHistory(false); }}>
-                ◯ Check-in
+function Onboarding({onDone}){
+  const [step,setStep]=useState(0);
+  const [chosen,setChosen]=useState(null);
+  const steps=[
+    {tag:"privat",title:"Alles bleibt bi dir.",body:"Kei Server, kei Cloud, kei Firma wo mitlost. Was du Gspänli erzellsch, blibt uf dim Grät — immer.",Icon:PrivIcon},
+    {tag:"kein therapeut",title:"Es ersetzt kei Therapie.",body:"Gspänli isch kei Coach und kei Therapeut. Es isch e Ort zwüsche «geit scho» und «bruch Hilf» — zum verstah was los isch.",Icon:TherapyIcon},
+    {tag:"erinnert sich",title:"Es behaltet was zellt.",body:"Mit der Zit lernt Gspänli di kenne. Es merkt Muster — z.B. dass dini Stimmig nach em Sport besser isch.",Icon:MemIcon},
+  ];
+  return(
+    <div style={{height:"100dvh",display:"flex",flexDirection:"column",background:"var(--paper)",backgroundImage:"radial-gradient(ellipse 600px 300px at 50% 0%,rgba(255,245,225,.6) 0%,transparent 70%)"}}>
+      <div className="ob-dots">
+        {[0,1,2,3].map(i=><div key={i} className={`ob-dot${i<=step?" active":""}`} style={{width:i===step?18:6}}/>)}
+      </div>
+      {step<3?(
+        <div className="ob-wrap">
+          <div className="ob-tag">· {steps[step].tag} ·</div>
+          <div className="ob-icon">{(()=>{const IC=steps[step].Icon;return <IC/>;})()}</div>
+          <h1 className="ob-h1">{steps[step].title}</h1>
+          <p className="ob-p">{steps[step].body}</p>
+          <div style={{marginTop:24}}>
+            <button className="ob-btn" onClick={()=>setStep(s=>s+1)}>
+              {step<2?"Wiiter":"Es Gspänli wähle"}
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M3 8h10M9 4l4 4-4 4"/></svg>
+            </button>
+          </div>
+        </div>
+      ):(
+        <div className="ob-wrap">
+          <h1 style={{fontFamily:"var(--display)",fontSize:32,lineHeight:1.1,color:"var(--ink)",fontStyle:"italic",marginBottom:8,textAlign:"center"}}>Mit wem<br/>magsch rede?</h1>
+          <p style={{fontSize:14,color:"var(--ink-mute)",textAlign:"center",marginBottom:24}}>Beidi lose glich guet zue. Du chasch spöter wächsle.</p>
+          <div className="char-grid">
+            {[{id:"sora",C:Sora,name:"Sora",trait:"neugierig · offe"},{id:"boedi",C:Boedi,name:"Bödi",trait:"ruig · grundsätzlich"}].map(({id,C,name,trait})=>(
+              <button key={id} className={`char-card${chosen===id?" sel":""}`} onClick={()=>setChosen(id)}>
+                <C size={90}/><div className="char-name">{name}</div><div className="char-trait">{trait}</div>
               </button>
-
-            </div>
-          </header>
-
-          {error && <div className="error-banner">⚠ {error}</div>}
-
-          {/* Check-in Panel */}
-          {showCheckin && (
-            <div className="checkin-panel">
-              <div className="checkin-title">
-                <span>Wie war dein Tag?</span>
-                <button className="btn-x" onClick={() => setShowCheckin(false)}>×</button>
-              </div>
-              <div className="checkin-row">
-                <span className="checkin-label">Stimmung</span>
-                <input type="range" className="mood-slider" min="1" max="10" step="1"
-                  value={ciMood} onChange={e => setCiMood(Number(e.target.value))} />
-                <span className="mood-num" style={{ color: MOOD_COLOR(ciMood) }}>{ciMood}</span>
-              </div>
-              <div className="checkin-row">
-                <span className="checkin-label">Schlaf</span>
-                <div className="btn-group">
-                  {["gut","mittel","schlecht"].map(s => (
-                    <button key={s} className={`btn-toggle ${ciSleep === s ? "active" : ""}`}
-                      onClick={() => setCiSleep(s)}>
-                      {SLEEP_LABELS[s]}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <div className="checkin-row">
-                <span className="checkin-label">Bewegung</span>
-                <div className="btn-group">
-                  <button className={`btn-toggle ${ciExercise ? "active" : ""}`} onClick={() => setCiExercise(true)}>🏃 Ja</button>
-                  <button className={`btn-toggle ${!ciExercise ? "active" : ""}`} onClick={() => setCiExercise(false)}>Nein</button>
-                </div>
-              </div>
-              <div className="checkin-actions">
-                <button className="btn-save" onClick={saveCheckin}>Speichern</button>
-              </div>
-            </div>
-          )}
-
-          {/* History Panel */}
-          {showHistory && checkinLog.length > 0 && (
-            <div className="history-panel">
-              <div className="history-title">
-                <span>Check-in Verlauf</span>
-                <button className="btn-x" onClick={() => setShowHistory(false)}>×</button>
-              </div>
-              {[...checkinLog].reverse().map((c, i) => (
-                <div className="history-row" key={i}>
-                  <span className="h-mood" style={{ color: MOOD_COLOR(c.mood) }}>{c.mood}/10</span>
-                  <div className="h-bar"><div className="h-bar-fill" style={{ width: `${c.mood * 10}%` }} /></div>
-                  <div className="h-icons">
-                    {c.sleep === "gut" && <span title="Gut geschlafen">🌙✓</span>}
-                    {c.sleep === "schlecht" && <span title="Schlecht geschlafen">🌙✗</span>}
-                    {c.exercise && <span title="Sport">🏃</span>}
-                    {c.source === "conversation" && <span title="Aus Gespräch">💬</span>}
-                  </div>
-                  <span className="h-date">{fmtDate(c.date)}</span>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* Messages */}
-          <div className="messages">
-            {messages.map((m, i) => (
-              <div key={i} className={`msg ${m.role === "user" ? "user" : "g"}`}>
-                <div className={`msg-av ${m.role === "user" ? "u" : "g"}`}>
-                  {m.role === "user" ? "Du" : "🌿"}
-                </div>
-                <div>
-                  <div className="bubble">{m.text}</div>
-                  <div className="msg-time">{fmt(m.time)}</div>
-                </div>
-              </div>
             ))}
-            {(loading || finalizing) && (
-              <div className="msg g">
-                <div className="msg-av g">🌿</div>
-                <div className="typing"><div className="dot"/><div className="dot"/><div className="dot"/></div>
-              </div>
-            )}
-            <div ref={endRef} />
           </div>
+          <div style={{flex:1}}/>
+          <button className="ob-btn" disabled={!chosen} onClick={()=>onDone(chosen)} style={{opacity:chosen?1:.4,cursor:chosen?"pointer":"not-allowed"}}>Loslege</button>
+        </div>
+      )}
+    </div>
+  );
+}
 
-          {/* Auto-Save Toast */}
-          {savedToast && <div className="toast">🌿 Automatisch gespeichert</div>}
+function App(){
+  const [view,setView]=useState("chat");
+  const [onboarded,setOnboarded]=useState(()=>!!localStorage.getItem("gs_ob"));
+  const [character,setCharacter]=useState(()=>localStorage.getItem("gs_char")||"sora");
+  const [messages,setMessages]=useState([]);
+  const [input,setInput]=useState("");
+  const [loading,setLoading]=useState(false);
+  const [history,setHistory]=useState({});
+  const [historyLoaded,setHistoryLoaded]=useState(false);
+  const [checkins,setCheckins]=useState([]);
+  const [error,setError]=useState("");
+  const [toast,setToast]=useState(false);
+  const [ciMood,setCiMood]=useState(6);
+  const [ciSleep,setCiSleep]=useState(null);
+  const [ciSport,setCiSport]=useState(null);
 
-          {/* Input */}
-          <div className="input-area">
-            <div className="input-row" style={{ opacity: done ? 0.5 : 1 }}>
-              <textarea ref={taRef}
-                placeholder={done ? "Gespräch beendet." : "Schreib was dich bewegt…"}
-                value={input} onChange={onInput} onKeyDown={onKey} rows={1}
-                style={{ height: "22px" }} disabled={done} />
-              <button className="send-btn" onClick={send} disabled={!input.trim() || loading || done}>
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
-                </svg>
-              </button>
-            </div>
-            <div className="disclaimer">
-              Gspänli ersetzt keine professionelle Beratung. Krise?&nbsp;
-              <a href="tel:143">143</a> (CH) · <a href="tel:08001110111">0800 111 0 111</a> (DE/AT) – kostenlos, 24/7
-            </div>
-          </div>
-        </>
-      );
+  const endRef=useRef(null);
+  const taRef=useRef(null);
+  const greeted=useRef(false);
+  const msgsRef=useRef([]);
+  const timer=useRef(null);
+  const doneRef=useRef(false);
+
+  useEffect(()=>{endRef.current?.scrollIntoView({behavior:"smooth"})},[messages,loading]);
+  useEffect(()=>{msgsRef.current=messages},[messages]);
+
+  useEffect(()=>{
+    fetch(`${API}/api/history`).then(r=>r.json()).then(d=>{
+      setHistory(d);
+      setCheckins((d.checkins||[]).slice(-60));
+    }).catch(()=>{})
+    .finally(()=>setHistoryLoaded(true));
+  },[]);
+
+  const callChat=useCallback(async(msgs)=>{
+    const r=await fetch(`${API}/api/chat`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({messages:msgs,history})});
+    if(!r.ok)throw new Error(`Fehler ${r.status}`);
+    return(await r.json()).response;
+  },[history]);
+
+  useEffect(()=>{
+    if(!onboarded||!historyLoaded||greeted.current)return;
+    greeted.current=true;
+    setLoading(true);
+
+    // Kontext aufbauen: war die Person heute schon da?
+    const today = new Date().toDateString();
+    const sessions = history.sessions || [];
+    const todaySession = sessions.find(s => new Date(s.date).toDateString() === today);
+    const lastSession = sessions.length > 0 ? sessions[sessions.length - 1] : null;
+    const hasHistory = sessions.length > 0 || (history.user_profile || "").length > 0;
+
+    let greetingContext;
+    if (todaySession) {
+      // Heute schon da gewesen
+      greetingContext = "Der Nutzer kommt heute ein zweites Mal. Begrüsse ihn kurz und warm, frag wie es ihm jetzt gerade geht – ohne nochmals nach seinem Namen zu fragen oder so zu tun als wäre es das erste Gespräch heute.";
+    } else if (hasHistory) {
+      // Kennt die Person, aber nicht heute
+      const daysSince = lastSession
+        ? Math.round((new Date() - new Date(lastSession.date)) / (1000*60*60*24))
+        : null;
+      const timeHint = daysSince === 1 ? "seit gestern" : daysSince ? `seit ${daysSince} Tagen` : "";
+      greetingContext = `Bekannte Person kommt zurück ${timeHint}. Begrüsse sie warm und persönlich – du kennst sie bereits. Frag wie es ihr geht, ohne nach dem Namen zu fragen.`;
+    } else {
+      // Erstes Mal
+      greetingContext = "Erste Sitzung – du kennst diese Person noch nicht. Stelle dich kurz als Gspänli vor und frag warm nach dem Namen.";
     }
 
-    ReactDOM.createRoot(document.getElementById("root")).render(<App />);
-  </script>
+    callChat([{role:"user",content:`[KONTEXT FÜR BEGRÜSSUNG: ${greetingContext}]
+
+Hallo.`}])
+      .then(t=>setMessages([{role:"assistant",text:t,time:new Date()}]))
+      .catch(()=>{
+        setError("Server nicht erreichbar. Läuft server.py auf Port 8000?");
+        setMessages([{role:"assistant",text:"Hoi. Schön, dass du wieder da bist.",time:new Date()}]);
+      })
+      .finally(()=>setLoading(false));
+  },[onboarded,historyLoaded,callChat,history]);
+
+  const silentSave=useCallback(async()=>{
+    const msgs=msgsRef.current;
+    if(!msgs.some(m=>m.role==="user")||doneRef.current)return;
+    doneRef.current=true;
+    try{
+      await fetch(`${API}/api/finalize`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({session_messages:msgs.map(m=>({role:m.role,content:m.text}))})});
+      setToast(true);setTimeout(()=>setToast(false),3000);
+    }catch{}
+  },[]);
+
+  useEffect(()=>{
+    const onHide=()=>{if(document.visibilityState==="hidden")silentSave();};
+    const onUnload=()=>{
+      const msgs=msgsRef.current;
+      if(!msgs.some(m=>m.role==="user")||doneRef.current)return;
+      navigator.sendBeacon(`${API}/api/finalize`,new Blob([JSON.stringify({session_messages:msgs.map(m=>({role:m.role,content:m.text}))})],{type:"application/json"}));
+    };
+    document.addEventListener("visibilitychange",onHide);
+    window.addEventListener("pagehide",onUnload);
+    return()=>{document.removeEventListener("visibilitychange",onHide);window.removeEventListener("pagehide",onUnload);};
+  },[silentSave]);
+
+  const resetTimer=useCallback(()=>{
+    if(timer.current)clearTimeout(timer.current);
+    timer.current=setTimeout(silentSave,10*60*1000);
+  },[silentSave]);
+
+  const send=async()=>{
+    const text=input.trim();
+    if(!text||loading)return;
+    setInput("");
+    if(taRef.current)taRef.current.style.height="22px";
+    setError("");
+    const um={role:"user",text,time:new Date()};
+    const upd=[...messages,um];
+    setMessages(upd);setLoading(true);
+    try{
+      const reply=await callChat(upd.map(m=>({role:m.role,content:m.text})));
+      setMessages(p=>[...p,{role:"assistant",text:reply,time:new Date()}]);
+      resetTimer();
+    }catch(e){setError(e.message);}
+    finally{setLoading(false);}
+  };
+
+  const onKey=e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();send();}};
+  const onInp=e=>{setInput(e.target.value);e.target.style.height="22px";e.target.style.height=Math.min(e.target.scrollHeight,110)+"px";};
+
+  const saveCI=async()=>{
+    if(!ciSleep||!ciSport)return;
+    const ex=ciSport==="ja";
+    const ent={mood:ciMood,sleep:ciSleep,exercise:ex,date:new Date().toISOString(),source:"manual"};
+    setCheckins(p=>[...p,ent]);
+    try{await fetch(`${API}/api/checkin`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({mood:ciMood,sleep:ciSleep,exercise:ex})});}catch{}
+    setCiSleep(null);setCiSport(null);setCiMood(6);setView("verlauf");
+  };
+
+  const handleSug=t=>{setInput(t);setTimeout(()=>taRef.current?.focus(),50);};
+  const finishOB=char=>{localStorage.setItem("gs_ob","1");localStorage.setItem("gs_char",char);setCharacter(char);setOnboarded(true);};
+
+  if(!onboarded)return <Onboarding onDone={finishOB}/>;
+
+  const CharC=character==="boedi"?Boedi:Sora;
+  const charName=character==="boedi"?"Bödi":"Sora";
+
+  // Pattern analysis
+  const patterns=buildPatterns(checkins);
+  const moodAvg=avgMood(checkins);
+  const moodTrend=trendLbl(checkins);
+  const sportP=sportPct(checkins);
+
+  return(
+    <>
+      {error&&<div className="err-bar">⚠ {error}</div>}
+      {toast&&<div className="toast">🌿 Gspeicheret</div>}
+
+      {view==="chat"&&(
+        <div className="screen" style={{paddingBottom:56}}>
+          <div className="chat-hdr">
+            <Avtr which={character} size={32}/>
+            <div style={{flex:1,marginLeft:2}}>
+              <div className="chat-name">{charName}</div>
+              <div className="chat-sub"><span className="online"/><span>uf dim Grät</span></div>
+            </div>
+            <button className="icon-btn" onClick={()=>setView("checkin")} title="Check-in">
+              <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><circle cx="9" cy="9" r="7"/><path d="M9 5v4l2.5 2.5"/></svg>
+            </button>
+          </div>
+          <div className="priv-pill">
+            <svg width="11" height="11" viewBox="0 0 11 11" fill="none" stroke="var(--clay)" strokeWidth="1.2"><path d="M5.5 1.5L8.5 3V6Q8.5 8.5 5.5 9.5Q2.5 8.5 2.5 6V3Z"/></svg>
+            Aues blibt uf dim Grät
+          </div>
+          {messages.length===0&&!loading?(
+            <div style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"0 32px 20px",gap:14}}>
+              <CharC size={128}/>
+              <h1 style={{fontFamily:"var(--display)",fontSize:32,lineHeight:1.1,color:"var(--ink)",textAlign:"center",fontStyle:"italic"}}>Hoi.</h1>
+              <p style={{fontFamily:"var(--serif)",fontSize:16,lineHeight:1.5,color:"var(--ink-soft)",textAlign:"center",maxWidth:280}}>
+                Mir kennend eus no nöd. Erzell mer öppis — egal was. I lose.
+              </p>
+              <div style={{width:"100%",display:"flex",flexDirection:"column",gap:8,marginTop:4}}>
+                {["Hütt isch komisch gsi…","I weiss nöd, was los isch","Eifach kurz lose, bitte"].map(t=>(
+                  <button key={t} className="sug" onClick={()=>handleSug(t)}>"{t}"</button>
+                ))}
+              </div>
+            </div>
+          ):(
+            <div className="messages">
+              <div className="day-mark">hütt</div>
+              {messages.map((m,i)=>(
+                <div key={i} className={`msg${m.role==="user"?" me":" them"}`}>
+                  {m.role==="user"
+                    ?<div className="bub-me">{m.text}</div>
+                    :<div className="bub-them">{m.text}</div>
+                  }
+                </div>
+              ))}
+              {loading&&(
+                <div className="msg them">
+                  <div className="typing-wrap">
+                    {[0,.15,.3].map((d,i)=><span key={i} className="tdot" style={{animation:`gs-dot 1.2s ease-in-out ${d}s infinite`}}/>)}
+                  </div>
+                </div>
+              )}
+              <div ref={endRef}/>
+            </div>
+          )}
+          <div className="input-area">
+            <div className="input-row">
+              <textarea ref={taRef} placeholder="erzell wiiter…" value={input} onChange={onInp} onKeyDown={onKey} rows={1} style={{height:"22px"}}/>
+              <button className="send-btn" onClick={send} disabled={!input.trim()||loading}>
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 7h8M7 3l4 4-4 4"/></svg>
+              </button>
+            </div>
+            <div className="disc">Kei Therapieersatz. Krise? <a href="tel:143">143</a> (CH) · <a href="tel:08001110111">0800 111 0 111</a> (DE/AT)</div>
+          </div>
+        </div>
+      )}
+
+      {view==="checkin"&&(
+        <div className="screen" style={{paddingBottom:56}}>
+          <div className="page-hdr">
+            <button className="icon-btn" onClick={()=>setView("chat")}><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5l-5 5 5 5"/></svg></button>
+            <span className="page-ttl">· kurz iicheck ·</span>
+            <div style={{width:36}}/>
+          </div>
+          <div className="ci-wrap">
+            <h2 className="ci-h2">Wie geits dir<br/>grad jetzt?</h2>
+            <div>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",marginBottom:14}}>
+                <span className="ci-lbl" style={{marginBottom:0}}>Stimmig</span>
+                <span className="ci-val">{ciMood}<small>/10</small></span>
+              </div>
+              <input type="range" className="ci-range" min="1" max="10" step="1"
+                value={ciMood} onChange={e=>setCiMood(Number(e.target.value))}
+                style={{background:`linear-gradient(90deg, var(--clay) ${(ciMood-1)*100/9}%, var(--line-strong) ${(ciMood-1)*100/9}%)`}}
+              />
+              <div style={{display:"flex",justifyContent:"space-between",fontSize:11,color:"var(--ink-faint)",marginTop:4}}>
+                <span>· schwär ·</span><span>· lüchtet ·</span>
+              </div>
+            </div>
+            <div>
+              <div className="ci-lbl">Wie hesch gschlofe?</div>
+              <div className="choice-row">
+                {[{id:"gut",l:"guet"},{id:"mittel",l:"mittel"},{id:"schlecht",l:"schlächt"}].map(c=>(
+                  <button key={c.id} className={`choice${ciSleep===c.id?" on":""}`} onClick={()=>setCiSleep(c.id)}>{c.l}</button>
+                ))}
+              </div>
+            </div>
+            <div>
+              <div className="ci-lbl">Hesch dich bewegt?</div>
+              <div className="choice-row">
+                <button className={`choice${ciSport==="ja"?" on":""}`} onClick={()=>setCiSport("ja")}>jo</button>
+                <button className={`choice${ciSport==="nein"?" on":""}`} onClick={()=>setCiSport("nein")}>näi</button>
+              </div>
+            </div>
+            <div style={{flex:1}}/>
+            <button className="ob-btn" onClick={saveCI} disabled={!ciSleep||!ciSport} style={{opacity:ciSleep&&ciSport?1:.4}}>Iitrage</button>
+          </div>
+        </div>
+      )}
+
+      {view==="verlauf"&&(
+        <div className="screen" style={{paddingBottom:56}}>
+          <div className="page-hdr">
+            <button className="icon-btn" onClick={()=>setView("chat")}><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5l-5 5 5 5"/></svg></button>
+            <span className="page-ttl">· verlauf ·</span>
+            <div style={{width:36}}/>
+          </div>
+          <div className="vl-wrap">
+            <h2 style={{fontFamily:"var(--display)",fontSize:28,color:"var(--ink)",marginBottom:4,fontStyle:"italic"}}>Was sich zeigt.</h2>
+            <p style={{fontSize:13,color:"var(--ink-mute)",marginBottom:20}}>{checkins.length} Check-in{checkins.length!==1?"s":""}</p>
+            {checkins.length<3?(
+              <div style={{textAlign:"center",padding:"40px 24px"}}>
+                <CharC size={80}/>
+                <p style={{fontFamily:"var(--serif)",fontSize:16,color:"var(--ink-soft)",marginTop:16,lineHeight:1.5}}>Nach 3–5 Check-ins zeigen sich d'erschte Muster.</p>
+              </div>
+            ):(
+              <>
+                {patterns.length>0&&(
+                  <div className="vl-pat">
+                    {patterns.map((p,i)=>(
+                      <div key={i} style={{marginBottom:i<patterns.length-1?14:0}}>
+                        <div className="vl-pat-tag"><span className="vl-pat-dot"/>muschter</div>
+                        <p className="vl-pat-txt">{p}</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <div style={{marginBottom:12}}>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",marginBottom:10}}>
+                    <span style={{fontFamily:"var(--serif)",fontSize:15,color:"var(--ink)"}}>Stimmig</span>
+                    <span style={{fontSize:11,color:"var(--ink-mute)"}}>letschti {Math.min(checkins.length,14)} Täg</span>
+                  </div>
+                  <div className="vl-bars">
+                    {checkins.slice(-14).map((c,i)=>(
+                      <div key={i} className="vl-bar" style={{height:`${(c.mood||5)*10}%`,background:moodCol(c.mood||5)}}/>
+                    ))}
+                  </div>
+                </div>
+                <div className="mini-stats">
+                  <div className="mini-stat"><div className="ms-lbl">Schnitt</div><div className="ms-val">{moodAvg}</div><div className="ms-sub">{moodTrend}</div></div>
+                  <div className="mini-stat"><div className="ms-lbl">Bewegig</div><div className="ms-val">{sportP}</div><div className="ms-sub">vo de Täg</div></div>
+                </div>
+                <div className="vl-disc">Muster sind kei Diagnose. Wenn's schwer wird: <strong>143</strong> isch immer eberichbar.</div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
+      <div style={{position:"absolute",bottom:0,left:0,right:0}}>
+        <div className="nav-bar">
+          {[
+            {id:"chat",label:"Chat",icon:<path d="M18 13a2 2 0 01-2 2H6l-4 4V5a2 2 0 012-2h12a2 2 0 012 2v8z"/>},
+            {id:"checkin",label:"Check-in",icon:<><circle cx="10" cy="10" r="8"/><path d="M10 6v4l2.5 2.5"/></>},
+            {id:"verlauf",label:"Verlauf",icon:<><path d="M3 17l4-6 4 3 4-8 2 3"/><path d="M3 17h14"/></>},
+          ].map(({id,label,icon})=>(
+            <button key={id} className={`nav-btn${view===id?" on":""}`} onClick={()=>setView(id)}>
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">{icon}</svg>
+              {label}
+            </button>
+          ))}
+        </div>
+      </div>
+    </>
+  );
+}
+
+function buildPatterns(cs){
+  if(cs.length<5)return[];
+  const r=cs.slice(-14);const ins=[];
+  const sm={gut:[],mittel:[],schlecht:[]};
+  r.forEach(c=>{if(c.sleep&&c.mood&&sm[c.sleep])sm[c.sleep].push(c.mood);});
+  if(sm.gut.length&&sm.schlecht.length){
+    const ag=sm.gut.reduce((a,b)=>a+b,0)/sm.gut.length;
+    const ab=sm.schlecht.reduce((a,b)=>a+b,0)/sm.schlecht.length;
+    if(ag-ab>=1.5)ins.push(`Wenn du guet gschlofe häsch, isch dini Stimmig im Schnitt ${(ag-ab).toFixed(1)} Pünkt höcher als nach e schlechte Nacht.`);
+  }
+  const ae=[],ar=[];
+  for(let i=1;i<r.length;i++){
+    if(r[i].mood)(r[i-1].exercise?ae:ar).push(r[i].mood);
+  }
+  if(ae.length>=3&&ar.length){
+    const a1=ae.reduce((a,b)=>a+b,0)/ae.length;
+    const a2=ar.reduce((a,b)=>a+b,0)/ar.length;
+    if(a1-a2>=1.0)ins.push(`Wenn du dich bewegt häsch, isch dini Stimmig am nächschte Tag im Schnitt ${(a1-a2).toFixed(1)} Pünkt höcher.`);
+  }
+  return ins;
+}
+function avgMood(cs){const v=cs.slice(-14).map(c=>c.mood).filter(Boolean);return v.length?(v.reduce((a,b)=>a+b,0)/v.length).toFixed(1):"–";}
+function trendLbl(cs){const v=cs.slice(-6).map(c=>c.mood).filter(Boolean);if(v.length<2)return"";const d=v[v.length-1]-v[0];return d>0?"↑ steigend":d<0?"↓ fallend":"→ stabil";}
+function sportPct(cs){const r=cs.slice(-14);if(!r.length)return"–";return Math.round(r.filter(c=>c.exercise).length/r.length*100)+"%";}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+</script>
 </body>
 </html>
