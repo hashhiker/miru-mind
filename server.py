@@ -123,6 +123,18 @@ def health():
     return {"status": "ok", "mode": os.getenv("MODE", "groq")}
 
 
+@app.post("/api/chat")
+def chat(req: ChatRequest):
+    try:
+        system_prompt = build_system_prompt(req.history if req.history else {})
+        messages = [{"role": "system", "content": system_prompt}]
+        messages += [{"role": m.role, "content": m.content} for m in req.messages]
+        response = _call_llm(messages, max_tokens=300, temperature=0.7)
+        return {"response": response}
+    except Exception as e:
+        print(f"CHAT ERROR: {type(e).__name__}: {e}")  # <-- neu
+        raise HTTPException(status_code=500, detail=str(e))
+
 # ─── Frontend ─────────────────────────────────────────────────────────────────
 
 WEB_DIR = Path(__file__).parent / "web"
@@ -137,3 +149,5 @@ if __name__ == "__main__":
     import uvicorn
     print("\n🌿 Gspänli  →  http://localhost:8000\n")
     uvicorn.run("server:app", host="0.0.0.0", port=8000, reload=True)
+
+
