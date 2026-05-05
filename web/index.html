@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Miru Mind</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: #F0EDE6;
+      height: 100dvh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    #root {
+      width: 100%;
+      max-width: 720px;
+      height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      background: #F7F4EE;
+      box-shadow: 0 0 60px rgba(45, 80, 22, 0.08);
+    }
+
+    /* ── Header ── */
+    .header {
+      background: #F7F4EE;
+      border-bottom: 1px solid #E2DDD4;
+      padding: 14px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+    }
+    .identity { display: flex; align-items: center; gap: 11px; }
+    .avatar {
+      width: 38px; height: 38px;
+      background: #2D5016;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 19px; flex-shrink: 0;
+    }
+    .name { font-family: 'Lora', serif; font-size: 17px; color: #1C2B0F; font-weight: 500; }
+    .tagline { font-size: 10px; color: #7A8C6E; font-weight: 300; letter-spacing: 0.6px; text-transform: uppercase; margin-top: 1px; }
+
+    .header-actions { display: flex; gap: 7px; }
+
+    .btn-pill {
+      background: #EBF0E4; border: 1px solid #C8D9B8;
+      color: #2D5016; font-family: 'DM Sans', sans-serif;
+      font-size: 12px; font-weight: 500;
+      padding: 6px 14px; border-radius: 20px;
+      cursor: pointer; transition: background 0.15s;
+    }
+    .btn-pill:hover { background: #DDE8D0; }
+    .btn-pill.ghost { background: transparent; color: #7A8C6E; }
+    .btn-pill.ghost:hover { background: #EBF0E4; color: #2D5016; }
+
+    /* ── Mood slider panel ── */
+    .mood-panel {
+      background: #EEE9E0;
+      border-bottom: 1px solid #E2DDD4;
+      padding: 12px 20px;
+      display: flex; align-items: center; gap: 12px;
+      flex-shrink: 0;
+      animation: slideDown 0.2s ease;
+    }
+    .mood-label { font-size: 12px; color: #7A8C6E; font-weight: 500; white-space: nowrap; }
+    .mood-slider { flex: 1; accent-color: #2D5016; cursor: pointer; }
+    .mood-num { font-size: 14px; font-weight: 500; min-width: 24px; text-align: center; transition: color 0.2s; }
+    .mood-desc { font-size: 12px; color: #7A8C6E; min-width: 96px; }
+    .btn-save {
+      background: #2D5016; color: #EBF0E4; border: none;
+      font-family: 'DM Sans', sans-serif; font-size: 12px; font-weight: 500;
+      padding: 7px 14px; border-radius: 20px; cursor: pointer; transition: background 0.15s;
+    }
+    .btn-save:hover { background: #3D6B1E; }
+    .btn-x { background: transparent; border: none; color: #B0A898; cursor: pointer; font-size: 18px; line-height: 1; padding: 0 4px; }
+
+    /* ── Mood history ── */
+    .mood-history {
+      background: #EEE9E0; border-bottom: 1px solid #E2DDD4;
+      padding: 12px 20px; flex-shrink: 0; max-height: 180px; overflow-y: auto;
+      animation: slideDown 0.2s ease;
+    }
+    .mood-history-title { font-size: 11px; color: #7A8C6E; text-transform: uppercase; letter-spacing: 0.7px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
+    .mood-row { display: flex; align-items: center; gap: 9px; padding: 4px 0; border-bottom: 1px solid #E2DDD4; font-size: 12px; color: #4A5E38; }
+    .mood-row:last-child { border-bottom: none; }
+    .mood-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+    .mood-row-time { color: #B0A898; font-size: 11px; margin-left: auto; }
+
+    /* ── Messages ── */
+    .messages {
+      flex: 1; overflow-y: auto;
+      padding: 20px 20px 10px;
+      display: flex; flex-direction: column; gap: 14px;
+    }
+    .messages::-webkit-scrollbar { width: 4px; }
+    .messages::-webkit-scrollbar-thumb { background: #C8D9B8; border-radius: 4px; }
+
+    .msg { display: flex; gap: 9px; animation: fadeUp 0.25s ease; }
+    .msg.user { flex-direction: row-reverse; }
+
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes slideDown { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: translateY(0); } }
+
+    .msg-av {
+      width: 30px; height: 30px; border-radius: 50%;
+      flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+      font-size: 13px; margin-top: 2px;
+    }
+    .msg-av.miru { background: #2D5016; }
+    .msg-av.user { background: #7A9E5A; color: white; font-size: 10px; font-weight: 500; }
+
+    .bubble {
+      max-width: 73%; padding: 11px 15px;
+      border-radius: 18px; font-size: 14px; line-height: 1.65; color: #1C2B0F;
+    }
+    .msg.miru .bubble {
+      background: #FFF; border: 1px solid #E2DDD4; border-bottom-left-radius: 4px; font-weight: 300;
+    }
+    .msg.user .bubble {
+      background: #2D5016; color: #EBF0E4; border-bottom-right-radius: 4px;
+    }
+    .msg-time { font-size: 10px; color: #C0B8AD; margin-top: 3px; padding: 0 3px; }
+    .msg.user .msg-time { text-align: right; }
+
+    /* Typing dots */
+    .typing { display: flex; align-items: center; gap: 5px; padding: 13px 15px; background: #FFF; border: 1px solid #E2DDD4; border-radius: 18px; border-bottom-left-radius: 4px; width: fit-content; }
+    .dot { width: 7px; height: 7px; background: #7A9E5A; border-radius: 50%; animation: pulse 1.2s ease-in-out infinite; }
+    .dot:nth-child(2) { animation-delay: 0.2s; }
+    .dot:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes pulse { 0%, 80%, 100% { opacity: 0.3; transform: scale(0.8); } 40% { opacity: 1; transform: scale(1); } }
+
+    /* ── Input ── */
+    .input-area { background: #F7F4EE; border-top: 1px solid #E2DDD4; padding: 14px 20px 18px; flex-shrink: 0; }
+    .input-row {
+      display: flex; gap: 9px; align-items: flex-end;
+      background: #FFF; border: 1px solid #C8D9B8; border-radius: 24px; padding: 9px 14px 9px 17px;
+      transition: border-color 0.15s;
+    }
+    .input-row:focus-within { border-color: #7A9E5A; box-shadow: 0 0 0 3px rgba(122, 158, 90, 0.11); }
+
+    textarea {
+      flex: 1; background: transparent; border: none; outline: none;
+      font-family: 'DM Sans', sans-serif; font-size: 14px; color: #1C2B0F;
+      resize: none; line-height: 1.5; max-height: 110px; min-height: 22px; overflow-y: auto;
+    }
+    textarea::placeholder { color: #C0B8AD; }
+
+    .send-btn {
+      background: #2D5016; border: none; color: white;
+      width: 33px; height: 33px; border-radius: 50%; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0; transition: background 0.15s, transform 0.1s;
+    }
+    .send-btn:hover { background: #3D6B1E; }
+    .send-btn:active { transform: scale(0.93); }
+    .send-btn:disabled { background: #C8D9B8; cursor: not-allowed; transform: none; }
+
+    .disclaimer { text-align: center; font-size: 10px; color: #C0B8AD; margin-top: 7px; line-height: 1.5; }
+    .disclaimer a { color: #7A8C6E; text-decoration: none; }
+    .disclaimer a:hover { text-decoration: underline; }
+
+    /* ── Error banner ── */
+    .error-banner {
+      background: #FEF3F2; border: 1px solid #FECDCA; color: #B42318;
+      font-size: 12px; padding: 8px 16px; text-align: center; flex-shrink: 0;
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <script type="text/babel">
+    const { useState, useRef, useEffect, useCallback } = React;
+
+    const API_BASE = "";   // Leer = gleicher Host (server.py)
+
+    const MOOD_LABELS = { 1:"Sehr schlecht", 2:"Schlecht", 3:"Nicht so gut", 4:"Mäßig", 5:"Okay", 6:"Ganz gut", 7:"Gut", 8:"Sehr gut", 9:"Toll", 10:"Ausgezeichnet" };
+    const MOOD_COLORS = { 1:"#C0392B", 2:"#E74C3C", 3:"#E67E22", 4:"#F39C12", 5:"#F1C40F", 6:"#9BC73D", 7:"#7DC142", 8:"#27AE60", 9:"#1E8449", 10:"#145A32" };
+
+    const fmt = d => d.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" });
+
+    function App() {
+      const [messages, setMessages]   = useState([]);
+      const [input, setInput]         = useState("");
+      const [loading, setLoading]     = useState(false);
+      const [showMood, setShowMood]   = useState(false);
+      const [showHist, setShowHist]   = useState(false);
+      const [moodVal, setMoodVal]     = useState(6);
+      const [moodLog, setMoodLog]     = useState([]);
+      const [error, setError]         = useState("");
+      const endRef   = useRef(null);
+      const taRef    = useRef(null);
+      const greeted  = useRef(false);
+
+      useEffect(() => { endRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages, loading]);
+
+      const callChat = useCallback(async (history) => {
+        const res = await fetch(`${API_BASE}/api/chat`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ messages: history }),
+        });
+        if (!res.ok) throw new Error(`Server-Fehler: ${res.status}`);
+        const data = await res.json();
+        return data.response;
+      }, []);
+
+      useEffect(() => {
+        if (greeted.current) return;
+        greeted.current = true;
+        setLoading(true);
+        callChat([{ role: "user", content: "Hallo, ich bin gerade zum ersten Mal hier." }])
+          .then(text => setMessages([{ role: "assistant", text, time: new Date() }]))
+          .catch(() => {
+            setError("Server nicht erreichbar. Läuft server.py auf Port 8000?");
+            setMessages([{ role: "assistant", text: "Hallo, schön dass du da bist. Wie geht es dir heute?", time: new Date() }]);
+          })
+          .finally(() => setLoading(false));
+      }, [callChat]);
+
+      const send = async () => {
+        const text = input.trim();
+        if (!text || loading) return;
+        setInput("");
+        if (taRef.current) taRef.current.style.height = "22px";
+        setError("");
+
+        const userMsg = { role: "user", text, time: new Date() };
+        const updated = [...messages, userMsg];
+        setMessages(updated);
+        setLoading(true);
+
+        try {
+          const history = updated.map(m => ({ role: m.role, content: m.text }));
+          const reply = await callChat(history);
+          setMessages(prev => [...prev, { role: "assistant", text: reply, time: new Date() }]);
+        } catch (e) {
+          setError(e.message);
+          setMessages(prev => [...prev, { role: "assistant", text: "Entschuldige, da ist etwas schiefgelaufen. Magst du es nochmal versuchen?", time: new Date() }]);
+        } finally {
+          setLoading(false);
+        }
+      };
+
+      const onKey = e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); } };
+
+      const onInput = e => {
+        setInput(e.target.value);
+        e.target.style.height = "22px";
+        e.target.style.height = Math.min(e.target.scrollHeight, 110) + "px";
+      };
+
+      const saveMood = () => {
+        setMoodLog(prev => [...prev, { value: moodVal, label: MOOD_LABELS[moodVal], color: MOOD_COLORS[moodVal], time: new Date() }]);
+        setShowMood(false); setShowHist(true);
+      };
+
+      return (
+        <>
+          <header className="header">
+            <div className="identity">
+              <div className="avatar">🌿</div>
+              <div>
+                <div className="name">Miru</div>
+                <div className="tagline">Dein Begleiter für mentale Gesundheit</div>
+              </div>
+            </div>
+            <div className="header-actions">
+              {moodLog.length > 0 && (
+                <button className="btn-pill ghost" onClick={() => { setShowHist(h => !h); setShowMood(false); }}>
+                  {showHist ? "Schließen" : `Stimmung (${moodLog.length})`}
+                </button>
+              )}
+              <button className="btn-pill" onClick={() => { setShowMood(m => !m); setShowHist(false); }}>
+                ◯ Stimmung
+              </button>
+            </div>
+          </header>
+
+          {error && <div className="error-banner">⚠ {error}</div>}
+
+          {showHist && moodLog.length > 0 && (
+            <div className="mood-history">
+              <div className="mood-history-title">
+                <span>Stimmungsverlauf</span>
+                <button className="btn-x" onClick={() => setShowHist(false)}>×</button>
+              </div>
+              {[...moodLog].reverse().map((e, i) => (
+                <div className="mood-row" key={i}>
+                  <div className="mood-dot" style={{ background: e.color }} />
+                  <span style={{ fontWeight: 500 }}>{e.value}/10</span>
+                  <span>{e.label}</span>
+                  <span className="mood-row-time">{fmt(e.time)}</span>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <div className="messages">
+            {messages.map((m, i) => (
+              <div key={i} className={`msg ${m.role === "user" ? "user" : "miru"}`}>
+                <div className={`msg-av ${m.role === "user" ? "user" : "miru"}`}>
+                  {m.role === "user" ? "Du" : "🌿"}
+                </div>
+                <div>
+                  <div className="bubble">{m.text}</div>
+                  <div className="msg-time">{fmt(m.time)}</div>
+                </div>
+              </div>
+            ))}
+            {loading && (
+              <div className="msg miru">
+                <div className="msg-av miru">🌿</div>
+                <div className="typing">
+                  <div className="dot"/><div className="dot"/><div className="dot"/>
+                </div>
+              </div>
+            )}
+            <div ref={endRef} />
+          </div>
+
+          {showMood && (
+            <div className="mood-panel">
+              <span className="mood-label">Wie geht es dir?</span>
+              <input type="range" className="mood-slider" min="1" max="10" step="1"
+                value={moodVal} onChange={e => setMoodVal(Number(e.target.value))} />
+              <span className="mood-num" style={{ color: MOOD_COLORS[moodVal] }}>{moodVal}</span>
+              <span className="mood-desc">{MOOD_LABELS[moodVal]}</span>
+              <button className="btn-save" onClick={saveMood}>Speichern</button>
+              <button className="btn-x" onClick={() => setShowMood(false)}>×</button>
+            </div>
+          )}
+
+          <div className="input-area">
+            <div className="input-row">
+              <textarea ref={taRef} placeholder="Schreib, was dich bewegt…"
+                value={input} onChange={onInput} onKeyDown={onKey} rows={1}
+                style={{ height: "22px" }} />
+              <button className="send-btn" onClick={send} disabled={!input.trim() || loading}>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
+                </svg>
+              </button>
+            </div>
+            <div className="disclaimer">
+              Miru ersetzt keine professionelle Beratung. Bei akuten Krisen:&nbsp;
+              <a href="tel:08001110111">0800 111 0 111</a> (kostenlos, 24/7)
+            </div>
+          </div>
+        </>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+  </script>
+</body>
+</html>

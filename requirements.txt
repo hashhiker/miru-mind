@@ -2,3 +2,5 @@ groq
 ollama
 rich
 python-dotenv
+fastapi
+uvicorn
