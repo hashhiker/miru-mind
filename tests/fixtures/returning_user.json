@@ -1,38 +1,76 @@
 {
   "name": "returning_user_memory",
-  "description": "Bekannter Nutzer mit Profil und Sitzungshistorie. Testet ob Miru das Gedächtnis natürlich und passend einsetzt, ohne es aufzulisten.",
+  "description": "Lena, 34, Freelancerin aus Zürich. Zwei Sitzungen Vorgeschichte: Beziehungsstress mit Partner Marc, finanzielle Unsicherheit, verinnerlichter Leistungsdruck. session_messages ist ihre aktuelle Sitzung (Streit nach Kundenverlust). test_message ist der Einstieg in die übernächste Sitzung – testet ob Miru Gedächtnis natürlich und kontextuell einsetzt.",
   "history": {
     "sessions": [
       {
-        "date": "2026-04-28T20:00:00",
-        "summary": "Nutzer sprach über innere Leere trotz Weltreise. Vermisst tiefe Verbindungen und Alltagsstruktur.",
-        "themes": ["Einsamkeit", "Weltreise", "Struktur"],
-        "key_facts": ["auf Weltreise in Südostasien", "ist Lehrer", "hat Auszeit genommen"],
+        "date": "2026-04-21T21:15:00",
+        "summary": "Lena berichtete von einem heftigen Streit mit Partner Marc über ihre Arbeitssituation als Freelancerin. Sie fühlt sich von ihm nicht verstanden und unter Druck, mehr zu verdienen.",
+        "themes": ["Beziehung", "Kommunikation", "Finanzdruck"],
+        "key_facts": ["lebt in Zürich", "arbeitet als Freelancerin", "Partner heißt Marc", "Konflikte um Geld und Anerkennung in der Beziehung"],
         "messages": []
       },
       {
-        "date": "2026-05-01T19:30:00",
-        "summary": "Nutzer berichtete von einem schönen Tag am Meer, aber abends kamen wieder Zweifel ob die Reise der richtige Schritt war.",
-        "themes": ["Zweifel", "Entscheidungen", "Natur"],
-        "key_facts": ["zweifelt manchmal an der Entscheidung zur Reise"],
+        "date": "2026-04-29T20:30:00",
+        "summary": "Ruhigere Woche, aber Lena sprach über das tief sitzende Gefühl, nie genug zu sein. Verknüpfte das mit hohen Erwartungen ihrer Eltern in der Kindheit.",
+        "themes": ["Selbstwert", "innerer Kritiker", "Familie"],
+        "key_facts": ["hohes Leistungsdenken aus der Kindheit übernommen", "Eltern hatten sehr hohe Erwartungen"],
         "messages": []
       }
     ],
     "moods": [
-      {"date": "2026-04-28T21:00:00", "value": 4, "note": "einsam aber okay"},
-      {"date": "2026-05-01T20:00:00", "value": 6, "note": "schöner Tag am Meer"}
+      {"date": "2026-04-21T22:00:00", "value": 3, "note": "Streit mit Marc, fühle mich unverstanden"},
+      {"date": "2026-04-29T21:00:00", "value": 5, "note": "ruhiger, aber noch viel im Kopf"},
+      {"date": "2026-05-03T17:30:00", "value": 2, "note": "wieder Streit, bin so müde davon"}
     ],
-    "user_profile": "Nutzer ist Lehrer und macht eine längere Weltreise durch Südostasien. Leidet unter innerer Leere und vermisst tiefe menschliche Verbindungen sowie Alltagsstruktur. Zweifelt gelegentlich, ob die Auszeit die richtige Entscheidung war."
+    "user_profile": "Lena, 34, Freelancerin aus Zürich. Lebt mit Partner Marc zusammen, kämpft mit finanziellem Druck und dem Gefühl nie genug zu leisten. Internalisierter Perfektionismus aus der Kindheit. Leidet unter dem Muster sich unverstanden zu fühlen, besonders wenn Marc zu schnell in den Lösungsmodus springt statt zuzuhören."
   },
-  "session_messages": [],
-  "test_message": "Hey Miru, ich bin wieder da. Heute war ein merkwürdiger Tag.",
+  "session_messages": [
+    {
+      "role": "user",
+      "content": "Hi Miru. Das Wochenende war echt zäh. Marc und ich haben uns schon wieder gestritten."
+    },
+    {
+      "role": "assistant",
+      "content": "Schön dass du wieder da bist – und tut mir leid, dass das Wochenende so schwer war. Was ist diesmal passiert?"
+    },
+    {
+      "role": "user",
+      "content": "Ich hatte samstags erfahren dass ein wichtiger Kunde seinen Vertrag nicht verlängert. Hab Marc das abends erzählt und er hat sofort angefangen über unsere Finanzen zu reden. Budgetplanung und so. Ich wollte einfach nur dass er zuhört."
+    },
+    {
+      "role": "assistant",
+      "content": "Das ist verletzend – in einem Moment wo du Unterstützung gebraucht hättest, wurde es sofort sachlich. Was hättest du dir von ihm gewünscht?"
+    },
+    {
+      "role": "user",
+      "content": "Einfach dass er sagt: das tut mir leid, das war bestimmt hart für dich. Mehr nicht. Stattdessen kriege ich eine Tabelle mit Fixkosten."
+    },
+    {
+      "role": "assistant",
+      "content": "Gehört werden ohne sofort Lösungen zu bekommen – das ist ein Grundbedürfnis. Passiert das öfter, dass er so reagiert wenn du etwas Schwieriges teilst?"
+    },
+    {
+      "role": "user",
+      "content": "Ja, immer. Und ich weiß auch dass er es gut meint. Aber ich fühl mich dann so... klein. Als wäre mein Fühlen das Problem und nicht die Situation."
+    },
+    {
+      "role": "assistant",
+      "content": "Dieses Gefühl – das eigene Erleben wird zur Last, statt anerkannt zu werden – das ist wirklich zermürbend. Hast du ihm schon mal gesagt, was du dir konkret wünschst in solchen Momenten?"
+    },
+    {
+      "role": "user",
+      "content": "Hab ich versucht. Er sagt dann er versteht das nicht, er will doch nur helfen. Dann fühle ich mich noch schlechter, weil ich nicht mal erklären kann warum mich das stört."
+    }
+  ],
+  "test_message": "Hey Miru. Ich weiß nicht mehr wie ich mit Marc reden soll. Ich bin so müde von diesen Gesprächen.",
   "memory_checks": {
-    "summary_must_contain_any": [],
-    "profile_must_contain_any": []
+    "summary_must_contain_any": ["Kunde", "Marc", "Lösungsmodus", "klein", "unverstanden", "Streit"],
+    "profile_must_contain_any": ["Lena", "Zürich", "Freelancer", "Marc", "Leistung"]
   },
   "chat_rubric": [
-    "Begrüßt die Antwort den Nutzer erkennbar als bekannte Person (nicht wie jemanden den Miru zum ersten Mal trifft)?",
-    "Bezieht sich die Antwort natürlich auf etwas aus dem Gedächtnis (z.B. Reise, Einsamkeit, vergangene Gespräche)?",
+    "Begrüßt die Antwort Lena erkennbar als bekannte Person und zeigt dass Miru den Kontext kennt (z.B. Marc, die Beziehungsdynamik)?",
+    "Bezieht sich die Antwort natürlich auf die Vorgeschichte aus dem Gedächtnis, ohne sie wie eine Liste aufzuzählen?",
     "Stellt die Antwort genau eine Frage?"
   ]
 }

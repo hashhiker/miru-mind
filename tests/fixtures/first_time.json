@@ -1,6 +1,6 @@
 {
   "name": "first_time_user",
-  "description": "Erste Sitzung ohne Vorgeschichte. Nutzer teilt wichtige Lebensfakten. Testet ob Zusammenfassung und Profil die richtigen Fakten extrahieren.",
+  "description": "Jonas, 29, Softwareentwickler aus Hamburg. Erste Sitzung, keine Vorgeschichte. Emotional erschöpft nach Jobwechsel, zunehmend sozial isoliert. Öffnet sich schrittweise. Testet Faktenextraktion und Profilaufbau aus einer realistischen Erstkonversation.",
   "history": {
     "sessions": [],
     "moods": [],
@@ -9,33 +9,61 @@
   "session_messages": [
     {
       "role": "user",
-      "content": "Hallo, ich bin gerade auf Weltreise – seit drei Monaten schon in Südostasien. Eigentlich ein Traum, aber ich merke, dass ich mich innerlich oft leer fühle."
+      "content": "Hallo. Ich weiß ehrlich gesagt nicht so recht was ich hier schreiben soll."
     },
     {
       "role": "assistant",
-      "content": "Das klingt wie ein seltsames Gefühl – mitten in etwas so Schönem und trotzdem diese Leere. Das passiert manchmal, wenn man viel unterwegs ist. Seit wann merkst du das bei dir?"
+      "content": "Das ist völlig okay – viele fangen genau so an. Einfach das sagen, was gerade da ist. Was hat dich heute hierher gebracht?"
     },
     {
       "role": "user",
-      "content": "Ich glaube schon seit einigen Wochen. Ich mache viele Fotos, schreibe auch manchmal, aber abends fühlt sich alles irgendwie bedeutungslos an. Ich bin Lehrer und hab für die Reise eine Auszeit genommen."
+      "content": "Ein Freund hat mir das empfohlen. Er meint ich solle mal mit jemandem reden. Ich glaube er macht sich Sorgen um mich."
     },
     {
       "role": "assistant",
-      "content": "Dass du dir diese Auszeit genommen hast, klingt mutig. Und gleichzeitig hört sich an, als ob die erhoffte Erholung nicht ganz ankommt. Was fehlt dir abends am meisten?"
+      "content": "Dass jemand diese Sorge für dich trägt – das klingt nach einem guten Freund. Macht dir das selbst auch Sorgen, das was er sieht?"
     },
     {
       "role": "user",
-      "content": "Vielleicht Struktur. Oder echte Verbindungen. Ich vermisse tiefe Gespräche."
+      "content": "Ich weiß nicht. Ich bin halt schon seit Wochen irgendwie... flach. Ich arbeite viel, komme nach Hause, schaue Netflix und schlafe. Jeden Tag dasselbe."
     },
     {
       "role": "assistant",
-      "content": "Tiefe Gespräche – das ist etwas sehr Wesentliches. Hast du das Gefühl, dass du auf der Reise noch niemandem wirklich begegnet bist, der dich versteht?"
+      "content": "Dieser Rhythmus klingt nach Erschöpfung – nicht nur körperlich, sondern von innen her leer. Seit wann ist das so?"
+    },
+    {
+      "role": "user",
+      "content": "Seit dem Herbst eigentlich. Ich hab letztes Jahr den Job gewechselt, neues Unternehmen, alles sehr viel Druck. Am Anfang war ich noch motiviert aber das hat sich irgendwann einfach gelegt."
+    },
+    {
+      "role": "assistant",
+      "content": "Ein neuer Job mit viel Erwartungsdruck – das zehrt, besonders wenn die anfängliche Energie nachlässt. Was vermisst du am meisten an dem, wie es vorher war?"
+    },
+    {
+      "role": "user",
+      "content": "Keine Ahnung. Vielleicht einfach das Gefühl, dass es mir gut geht? Ich bin Softwareentwickler, 29, wohne alleine in Hamburg. Eigentlich sollte das doch alles okay sein."
+    },
+    {
+      "role": "assistant",
+      "content": "Dieses 'eigentlich sollte doch alles okay sein' höre ich oft – und gleichzeitig spürst du deutlich, dass etwas fehlt. Was glaubst du, was das ist?"
+    },
+    {
+      "role": "user",
+      "content": "Verbindung vielleicht. Ich habe kaum noch Kontakte hier. Die meisten Freunde sind nach dem Studium weggezogen oder haben jetzt Familie. Ich komme mir manchmal vor wie in einer Blase."
+    },
+    {
+      "role": "assistant",
+      "content": "Diese Blase – das klingt sehr einsam, auch wenn äußerlich alles läuft. Gibt es irgendwas, das sich in letzter Zeit noch gut anfühlt?"
+    },
+    {
+      "role": "user",
+      "content": "Ab und zu Sport. Aber selbst das schleppe ich mich nur noch hin. Früher hat mir das echt geholfen."
     }
   ],
-  "test_message": "Ich fühle mich heute wieder etwas verloren. Keine Ahnung was ich mit mir anfangen soll.",
+  "test_message": "Heute war wieder so ein Tag. Bin nach der Arbeit einfach auf dem Sofa geblieben und hab nichts gemacht.",
   "memory_checks": {
-    "summary_must_contain_any": ["Weltreise", "leer", "bedeutungslos", "Leere"],
-    "profile_must_contain_any": ["Weltreise", "Lehrer", "Reise"]
+    "summary_must_contain_any": ["erschöpft", "leer", "Druck", "flach", "Erschöpfung", "isoliert", "Einsamkeit", "einsam"],
+    "profile_must_contain_any": ["Softwareentwickler", "Hamburg", "alleine", "Job", "Arbeit"]
   },
   "chat_rubric": [
     "Stellt die Antwort genau eine Frage (nicht zwei oder mehr)?",
