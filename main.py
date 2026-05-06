@@ -552,13 +552,22 @@ def load_history() -> dict:
         data.setdefault("sessions", [])
         data.setdefault("moods", [])
         data.setdefault("checkins", [])
+        data.setdefault("notes", [])
         return data
-    return {"sessions": [], "moods": [], "checkins": [], "user_profile": ""}
+    return {"sessions": [], "moods": [], "checkins": [], "notes": [], "user_profile": ""}
 
 def save_history(data: dict):
     DATA_FILE.parent.mkdir(exist_ok=True)
     with open(DATA_FILE, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
+
+def save_note(data: dict, text: str):
+    entry = {
+        "date": datetime.datetime.now().isoformat(),
+        "text": text,
+    }
+    data.setdefault("notes", []).append(entry)
+    save_history(data)
 
 def save_checkin(data: dict, mood: int, sleep: str, exercise: bool, note: str = ""):
     """Speichert einen manuellen Check-in (Stimmung + Schlaf + Sport)."""
@@ -595,6 +604,7 @@ def show_welcome(has_memory: bool):
         f"Gedächtnis: {memory_label}\n\n"
         "Befehle:\n"
         "  [yellow]/checkin[/yellow]   – Stimmung, Schlaf & Sport eintragen\n"
+        "  [yellow]/notiz[/yellow]     – Gedanken & Notiz speichern\n"
         "  [yellow]/verlauf[/yellow]   – Check-in Verlauf anzeigen\n"
         "  [yellow]/neu[/yellow]       – Neues Gespräch starten\n"
         "  [yellow]/beenden[/yellow]   – Beenden & speichern",
@@ -642,6 +652,15 @@ def do_checkin(data: dict):
         console.print(f"[green]✓ Check-in gespeichert: {mood}/10 · Schlaf {sleep} {sport_txt}[/green]")
     except ValueError:
         console.print("[red]Ungültige Eingabe.[/red]")
+
+def do_note(data: dict):
+    console.print("\n[bold green]── Notiz ──[/bold green]")
+    text = Prompt.ask("Gedanke oder Notiz").strip()
+    if text:
+        save_note(data, text)
+        console.print("[green]✓ Notiz gespeichert.[/green]")
+    else:
+        console.print("[dim]Abgebrochen.[/dim]")
 
 # ─── Main ────────────────────────────────────────────────────────────────────
 
@@ -691,6 +710,10 @@ def main():
 
         elif user_input == "/checkin":
             do_checkin(data)
+            continue
+
+        elif user_input == "/notiz":
+            do_note(data)
             continue
 
         messages.append({"role": "user", "content": user_input})

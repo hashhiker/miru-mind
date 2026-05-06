@@ -24,6 +24,7 @@ from main import (
     load_history,
     save_history,
     save_checkin,
+    save_note,
 )
 
 app = FastAPI(title="Gspänli API")
@@ -48,6 +49,9 @@ class CheckinRequest(BaseModel):
     sleep: str
     exercise: bool
     note: str = ""
+
+class NoteRequest(BaseModel):
+    text: str
 
 
 # ─── Chat ─────────────────────────────────────────────────────────────────────
@@ -115,6 +119,16 @@ def checkin(req: CheckinRequest):
         raise HTTPException(status_code=422, detail="sleep: gut|mittel|schlecht")
     data = load_history()
     save_checkin(data, req.mood, req.sleep, req.exercise, req.note)
+    return {"status": "ok"}
+
+
+@app.post("/api/notes")
+def add_note(req: NoteRequest):
+    text = req.text.strip()
+    if not text:
+        raise HTTPException(status_code=422, detail="text darf nicht leer sein")
+    data = load_history()
+    save_note(data, text)
     return {"status": "ok"}
 
 
