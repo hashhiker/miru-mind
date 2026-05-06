@@ -191,13 +191,42 @@ Antworte NUR mit dem Profiltext."""
 
 def _call_llm(messages: list[dict], max_tokens: int = 300, temperature: float = 0.7) -> str:
     if MODE == "groq":
-        response = groq_client.chat.completions.create(
+        raw = groq_client.chat.completions.with_raw_response.create(
             model=GROQ_MODEL,
             messages=messages,
             max_tokens=max_tokens,
             temperature=temperature
         )
-        return response.choices[0].message.content
+        response = raw.parse()
+        content = response.choices[0].message.content
+
+        # ── Token-Anzeige ──────────────────────────────────────────────────────
+        usage = response.usage
+        if usage:
+            p = usage.prompt_tokens
+            c = usage.completion_tokens
+            t = usage.total_tokens
+
+            rem_day = raw.headers.get("x-ratelimit-remaining-tokens-day", None)
+            lim_day = raw.headers.get("x-ratelimit-limit-tokens-day", None)
+
+            if rem_day is not None:
+                rem_int   = int(rem_day)
+                day_color = "green" if rem_int > 50_000 else "yellow" if rem_int > 10_000 else "red"
+                day_str   = f"tag: [{day_color}]{rem_int:,}[/{day_color}]/{int(lim_day):,}"
+            else:
+                day_str = "tag: [dim]n/a[/dim]"
+
+            console.print(
+                f"[dim]  ↳ tokens · "
+                f"prompt [yellow]{p:,}[/yellow] · "
+                f"completion [yellow]{c:,}[/yellow] · "
+                f"total [bold white]{t:,}[/bold white] · "
+                f"{day_str}[/dim]"
+            )
+
+        return content
+
     elif MODE == "local":
         response = ollama_client.chat(
             model=OLLAMA_MODEL,
@@ -205,6 +234,7 @@ def _call_llm(messages: list[dict], max_tokens: int = 300, temperature: float = 
             options={"temperature": temperature, "num_predict": max_tokens}
         )
         return response["message"]["content"]
+
     return ""
 
 def get_chat_response(messages: list[dict]) -> str:
@@ -369,7 +399,7 @@ def build_memory_context(data: dict) -> str:
                 )
 
     # ── Erkannte Muster ──
-    pattern_context = analyze_patterns(data)  # FIX: umbenannt von 'patterns' → 'pattern_context'
+    pattern_context = analyze_patterns(data)
     if pattern_context:
         parts.append(pattern_context)
 
@@ -383,12 +413,12 @@ def build_memory_context(data: dict) -> str:
             if session.get("summary"):
                 line = f"- {date}: {session['summary']}"
                 themes = ", ".join(session.get("themes", []))
-                session_patterns = ", ".join(session.get("patterns", []))  # FIX: umbenannt von 'patterns' → 'session_patterns'
+                session_patterns = ", ".join(session.get("patterns", []))
                 if themes:
                     line += f" [Themen: {themes}]"
                 if session_patterns:
                     line += f" [Muster: {session_patterns}]"
-                session_lines.append(line)  # FIX: war innerhalb des 'if session_patterns' Blocks eingerückt
+                session_lines.append(line)
             else:
                 messages = session.get("messages", [])
                 user_msgs = [m["content"] for m in messages if m["role"] == "user"]
@@ -445,9 +475,9 @@ def summarize_session(session_messages: list[dict]) -> dict | None:
 def update_user_profile(data: dict, summary: dict) -> str:
     current_profile = data.get("user_profile", "")
 
-    themes = ", ".join(summary.get("themes", []))
+    themes   = ", ".join(summary.get("themes", []))
     patterns = ", ".join(summary.get("patterns", []))
-    facts = "; ".join(summary.get("key_facts", []))
+    facts    = "; ".join(summary.get("key_facts", []))
 
     update_text = f"""
 Neue Sitzung:
@@ -485,8 +515,8 @@ def finalize_session(data: dict, session_messages: list[dict]) -> None:
         "messages": session_messages,
     }
     if summary:
-        session_entry["summary"]  = summary.get("summary", "")
-        session_entry["themes"]   = summary.get("themes", [])
+        session_entry["summary"]   = summary.get("summary", "")
+        session_entry["themes"]    = summary.get("themes", [])
         session_entry["key_facts"] = summary.get("key_facts", [])
 
         if summary.get("patterns"):
@@ -535,8 +565,8 @@ def save_checkin(data: dict, mood: int, sleep: str, exercise: bool, note: str = 
     entry = {
         "date": datetime.datetime.now().isoformat(),
         "mood": mood,
-        "sleep": sleep,        # "gut" / "mittel" / "schlecht"
-        "exercise": exercise,  # True / False
+        "sleep": sleep,
+        "exercise": exercise,
         "note": note,
         "source": "manual"
     }
