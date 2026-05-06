@@ -295,7 +295,7 @@ function Onboarding({onDone}){
 }
 
 function App(){
-  const [view,setView]=useState("chat");
+  const [view,setView]=useState("checkin");
   const [onboarded,setOnboarded]=useState(()=>!!localStorage.getItem("gs_ob"));
   const [character,setCharacter]=useState(()=>localStorage.getItem("gs_char")||"sora");
   const [messages,setMessages]=useState([]);
@@ -340,7 +340,7 @@ function App(){
   },[history]);
 
   useEffect(()=>{
-    if(!onboarded||!historyLoaded||greeted.current)return;
+    if(!onboarded||!historyLoaded||greeted.current||view!=="chat")return;
     greeted.current=true;
     setLoading(true);
 
@@ -376,7 +376,7 @@ Hallo.`}])
         setMessages([{role:"assistant",text:"Hoi. Schön, dass du wieder da bist.",time:new Date()}]);
       })
       .finally(()=>setLoading(false));
-  },[onboarded,historyLoaded,callChat,history]);
+  },[onboarded,historyLoaded,callChat,history,view]);
 
   const silentSave=useCallback(async()=>{
     const msgs=msgsRef.current;
