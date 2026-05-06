@@ -137,32 +137,55 @@ Kein Themenwechsel bis Antwort.
 
 Sprache: Deutsch."""
 
-SUMMARIZATION_PROMPT = """Du analysierst eine abgeschlossene Gesprächssitzung und erstellst eine kompakte Zusammenfassung.
+SUMMARIZATION_PROMPT = """Analysiere eine abgeschlossene Gesprächssitzung.
 
-Antworte NUR mit validem JSON (keine weiteren Texte):
+Antworte NUR mit JSON. Keine Erklärungen, keine zusätzlichen Zeichen.
+
 {
-  "summary": "1-2 Sätze über das Gespräch und die emotionale Lage",
-  "themes": ["Thema1", "Thema2"],
-  "key_facts": ["Stabiler Fakt über den Nutzer", "Weiterer Fakt"],
+  "summary": "1-2 Sätze über Verlauf und emotionale Entwicklung",
+  "themes": ["konkretes Thema", "konkretes Thema"],
+  "patterns": ["wiederkehrendes Muster oder Tendenz"],
+  "key_facts": ["stabile Lebensfakten (z.B. Job, Beziehung, Routinen)"],
   "mood_observed": 5,
   "lifestyle_signals": {
     "sleep": "gut|mittel|schlecht|null",
-    "exercise": true
+    "exercise": true|null
   }
 }
 
-mood_observed: geschätzte Stimmung am Ende (1-10).
-key_facts: stabile Fakten (Name, Alter, Lebenssituation, Arbeit, wiederkehrende Themen) – keine Gesprächsinhalte.
-lifestyle_signals.sleep: nur setzen wenn Schlaf explizit im Gespräch erwähnt wurde, sonst null.
-lifestyle_signals.exercise: nur setzen wenn Sport/Bewegung erwähnt wurde, sonst null."""
+REGELN:
+- themes: spezifisch (z.B. "Druck im Job wegen Deadlines", nicht "Arbeit")
+- patterns: nur wenn klar wiederkehrend oder typisch
+- key_facts: nur stabile Infos, keine temporären Gefühle
+- mood_observed:
+  1 = sehr schlecht (verzweifelt)
+  5 = neutral
+  10 = sehr gut (ruhig, stabil)
 
-USER_PROFILE_UPDATE_PROMPT = """Du pflegst das Kurzprofil eines Nutzers für Gspänli, einen privaten Begleiter.
+- sleep: nur wenn explizit erwähnt, sonst null
+- exercise: nur wenn erwähnt, sonst null"""
 
-Bisheriges Profil und neue Sitzungsinfos werden dir gegeben.
-Schreibe ein aktualisiertes Profil als kurzen Absatz (max. 80 Wörter) auf Deutsch.
-Behalte wichtige stabile Fakten, lass Veraltetes weg.
-Keine Gesprächsinhalte – nur Persönlichkeit und Lebenssituation.
-Antworte NUR mit dem Profiltext, ohne Formatierung."""
+USER_PROFILE_UPDATE_PROMPT = """Aktualisiere das Kurzprofil eines Nutzers.
+
+INPUT:
+- Bisheriges Profil
+- Neue Sitzungs-Zusammenfassung
+
+OUTPUT:
+Ein kompakter Absatz (max. 80 Wörter, Deutsch).
+
+FOKUS:
+- stabile Lebenssituation (Job, Umfeld, Alltag)
+- wiederkehrende Themen oder Muster
+- relevante Gewohnheiten (z.B. Schlaf, Bewegung)
+
+REGELN:
+- Behalte Wichtiges, entferne Veraltetes
+- Keine einmaligen Ereignisse
+- Keine direkten Gesprächsinhalte
+- Schreib sachlich und dicht (keine Füllsätze)
+
+Antworte NUR mit dem Profiltext."""
 
 # ─── LLM Core ────────────────────────────────────────────────────────────────
 
@@ -346,9 +369,9 @@ def build_memory_context(data: dict) -> str:
                 )
 
     # ── Erkannte Muster ──
-    patterns = analyze_patterns(data)
-    if patterns:
-        parts.append(patterns)
+    pattern_context = analyze_patterns(data)  # FIX: umbenannt von 'patterns' → 'pattern_context'
+    if pattern_context:
+        parts.append(pattern_context)
 
     # ── Vergangene Gespräche ──
     sessions = data.get("sessions", [])
@@ -360,9 +383,12 @@ def build_memory_context(data: dict) -> str:
             if session.get("summary"):
                 line = f"- {date}: {session['summary']}"
                 themes = ", ".join(session.get("themes", []))
+                session_patterns = ", ".join(session.get("patterns", []))  # FIX: umbenannt von 'patterns' → 'session_patterns'
                 if themes:
                     line += f" [Themen: {themes}]"
-                session_lines.append(line)
+                if session_patterns:
+                    line += f" [Muster: {session_patterns}]"
+                session_lines.append(line)  # FIX: war innerhalb des 'if session_patterns' Blocks eingerückt
             else:
                 messages = session.get("messages", [])
                 user_msgs = [m["content"] for m in messages if m["role"] == "user"]
@@ -418,19 +444,35 @@ def summarize_session(session_messages: list[dict]) -> dict | None:
 
 def update_user_profile(data: dict, summary: dict) -> str:
     current_profile = data.get("user_profile", "")
-    new_facts = "; ".join(summary.get("key_facts", []))
-    update_text = f"Neue Sitzung: {summary.get('summary', '')} Neue Fakten: {new_facts}"
+
+    themes = ", ".join(summary.get("themes", []))
+    patterns = ", ".join(summary.get("patterns", []))
+    facts = "; ".join(summary.get("key_facts", []))
+
+    update_text = f"""
+Neue Sitzung:
+{summary.get('summary', '')}
+
+Themen: {themes}
+Muster: {patterns}
+Fakten: {facts}
+"""
+
     try:
         return _call_llm(
             [
                 {"role": "system", "content": USER_PROFILE_UPDATE_PROMPT},
-                {"role": "user", "content": f"Bisheriges Profil:\n{current_profile or '(noch keins)'}\n\n{update_text}"}
+                {
+                    "role": "user",
+                    "content": f"Bisheriges Profil:\n{current_profile or '(noch keins)'}\n\n{update_text}"
+                }
             ],
             max_tokens=150,
             temperature=0.2
         ).strip()
     except Exception:
         return current_profile
+
 
 def finalize_session(data: dict, session_messages: list[dict]) -> None:
     if not session_messages:
@@ -446,6 +488,10 @@ def finalize_session(data: dict, session_messages: list[dict]) -> None:
         session_entry["summary"]  = summary.get("summary", "")
         session_entry["themes"]   = summary.get("themes", [])
         session_entry["key_facts"] = summary.get("key_facts", [])
+
+        if summary.get("patterns"):
+            session_entry["patterns"] = summary["patterns"]
+
         if summary.get("mood_observed") is not None:
             session_entry["mood_observed"] = summary["mood_observed"]
 
@@ -457,7 +503,7 @@ def finalize_session(data: dict, session_messages: list[dict]) -> None:
                 "mood": summary.get("mood_observed"),
                 "sleep": signals.get("sleep"),
                 "exercise": signals.get("exercise"),
-                "source": "conversation"   # Unterscheidet von manuellem Check-in
+                "source": "conversation"
             }
             data.setdefault("checkins", []).append(implicit_checkin)
 
